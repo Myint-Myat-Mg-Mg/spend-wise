@@ -13,7 +13,7 @@ export class OtpService {
 
     async createOtp(userId: string, purpose: OtpPurpose): Promise<Otp> {
         const code = this.generateOTP();
-        const expiresAt = addMinutes(new Date(), 3);
+        const expiresAt = addMinutes(new Date(), 10);
 
         await this.prisma.otp.deleteMany({
             where: {

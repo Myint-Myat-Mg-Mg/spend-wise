@@ -65,8 +65,13 @@ export class  AuthService {
         }; 
     }
 
-    async verifyEmail(userId: string, code: string): Promise<{ message: string }> {
-        const isValid = await this.otpService.verifyOtp(userId, OtpPurpose.SIGNUP, code);
+    async verifyEmail(email: string, code: string): Promise<{ message: string }> {
+        const user = await this.userService.findByEmail(email);
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        const isValid = await this.otpService.verifyOtp(user.id, OtpPurpose.SIGNUP, code);
         if (isValid) {
             return { message: 'Email Verified successfully.'};
         }
@@ -106,13 +111,19 @@ export class  AuthService {
         return { message: 'OTP sent to your email. Please verify to complete login.'};
     }
 
-    async verifyLoginOtp(userId: string, code: string): Promise<{ access_token: string }> {
-        const isValid = await this.otpService.verifyOtp(userId, OtpPurpose.LOGIN, code);
+    async verifyLoginOtp(email: string, code: string): Promise<{ access_token: string }> {
+        const user = await this.userService.findByEmail(email);
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        const isValid = await this.otpService.verifyOtp(user.id, OtpPurpose.LOGIN, code);
         if (isValid) {
-            const user = await this.userService.findById(userId);
             const payload = { username: user.email, sub: user.id };
             return {
-                access_token: this.jwtService.sign(payload),
+                access_token: this.jwtService.sign(payload,{
+                    secret:process.env.JWT_SECRET
+                }),
             };
         }
         throw new BadRequestException('Invalid or expired OTP');

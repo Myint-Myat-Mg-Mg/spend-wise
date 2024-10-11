@@ -27,8 +27,8 @@ export class UserLoginDto {
 }
 
 export class VerifyOtpDto {
-    @IsUUID()
-    userId: string;
+    @IsEmail()
+    email: string;
 
     @ApiProperty({ example: '123456' })
     @IsNotEmpty()

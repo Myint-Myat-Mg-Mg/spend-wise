@@ -23,7 +23,7 @@ export class AuthController {
     @ApiResponse({ status: 200, description: 'Email verified successfully.' })
     @ApiResponse({ status: 400, description: 'Invalid or expired OTP.' })
     async verifyEmail(@Body(ValidationPipe) verifyOtpDto: VerifyOtpDto) {
-        return this.authService.verifyEmail(verifyOtpDto.userId, verifyOtpDto.code);
+        return this.authService.verifyEmail(verifyOtpDto.email, verifyOtpDto.code);
     }
 
     @Post('login')
@@ -39,7 +39,7 @@ export class AuthController {
     @ApiResponse({ status: 200, description: 'Login successful. JWT token issued.' })
     @ApiResponse({ status: 400, description: 'Invalid or expired OTP.' })
     async verifyLoginOtp(@Body(ValidationPipe) verifyOtpDto: VerifyOtpDto) {
-        return this.authService.verifyLoginOtp(verifyOtpDto.userId, verifyOtpDto.code);
+        return this.authService.verifyLoginOtp(verifyOtpDto.email, verifyOtpDto.code);
     }
 
     @Post('forgot-password')
