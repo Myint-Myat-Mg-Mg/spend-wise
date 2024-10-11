@@ -7,8 +7,10 @@ import { UserRegisterDto, UserLoginDto } from './dto/auth.dto';
 import { OtpService } from 'src/otp/otp.service';
 import { OtpPurpose } from '@prisma/client';
 import { EmailService } from 'src/email/email.service';
+import { SendEmailDto } from 'src/email/email.interface';
 import { promises } from 'dns';
 import { retry } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 
 
 @Injectable()
@@ -18,6 +20,7 @@ export class  AuthService {
         private readonly jwtService: JwtService,
         private readonly otpService: OtpService,
         private readonly emailService: EmailService,
+        private readonly configService: ConfigService,
     ) {}
 
     async registerUser(dto: UserRegisterDto): Promise<{ message: string }> {
@@ -41,9 +44,19 @@ export class  AuthService {
 
             const otp = await this.otpService.createOtp(user.id, OtpPurpose.SIGNUP);
 
-            const subject = 'Verify your email for Spend-Wise';
-            const text = `Your OTP code is ${otp.code}. It expires in 1 minute`;
-            // await this.emailService.sendEmail(user.email, subject, text);
+            const sendEmailDto: SendEmailDto = {
+                from: {
+                    name: this.configService.get<string>('APP_NAME') || 'Spend-Wise',
+                    address: this.configService.get<string>('FROM_EMAIL') || 'no-reply@spend-wise.com',
+                },
+                recipients: [{
+                    name: user.name,
+                    address: user.email,
+                }],
+                subject: 'Verify your email for Spend-Wise',
+                html: `<p>Your OTP code is <strong>${otp.code}</strong>. It expires in 1 minute.</p>`,
+            };
+            await this.emailService.sendEmail(sendEmailDto);
 
             return { message: 'User registered successfully. Please verify your email with the OTP sent.'};  
         } catch (error){
@@ -75,9 +88,20 @@ export class  AuthService {
 
         const otp = await this.otpService.createOtp(user.id, OtpPurpose.LOGIN);
         
-        const subject = 'Your Login OTP for Spend-Wise';
-        const text = `Your OTP code is ${otp.code}. It expires in 1 minute.`;
-        // await this.emailService.sendEmail(user.email, subject, text);
+        const sendEmailDto: SendEmailDto = {
+            from: {
+                name: this.configService.get<string>('APP_NAME') || 'Spend-Wise',
+                address: this.configService.get<string>('FROM_EMAIL') || 'no-reply@spend-wise.com',
+            },
+            recipients: [{
+                name: user.name,
+                address: user.email,
+            }],
+            subject: 'Verify your email for Spend-Wise',
+            html: `<p>Your OTP code is <strong>${otp.code}</strong>. It expires in 1 minute.</p>`,
+        };
+
+        await this.emailService.sendEmail(sendEmailDto);
 
         return { message: 'OTP sent to your email. Please verify to complete login.'};
     }
@@ -91,7 +115,7 @@ export class  AuthService {
                 access_token: this.jwtService.sign(payload),
             };
         }
-        throw new BadRequestException('Invalid OTP');
+        throw new BadRequestException('Invalid or expired OTP');
     }
 
     async forgotPassword(email: string): Promise<{ message: string }> {
@@ -102,9 +126,19 @@ export class  AuthService {
 
         const otp = await this.otpService.createOtp(user.id, OtpPurpose.FORGOT_PASSWORD);
 
-        const subject = 'Your Password Reset OTP for Spend-Wise';
-        const text = `Your OTP code is ${otp.code}. It expires in 1 minute`;
-        // await this.emailService.sendEmail(user.email, subject, text);
+        const sendEmailDto: SendEmailDto = {
+            from: {
+                name: this.configService.get<string>('APP_NAME') || 'Spend-Wise',
+                address: this.configService.get<string>('FROM_EMAIL') || 'no-reply@spend-wise.com',
+            },
+            recipients: [{
+                name: user.name,
+                address: user.email,
+            }],
+            subject: 'Reset your password for Spend-Wise',
+            html: `<p>Your OTP code is <strong>${otp.code}</strong>. It expires in 1 minute.</p>`,
+        }
+        await this.emailService.sendEmail(sendEmailDto);
 
         return { message: 'OTP sent to your email. Please verify to reset your password.'};
     }

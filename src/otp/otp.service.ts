@@ -50,12 +50,13 @@ export class OtpService {
             throw new BadRequestException('Invalid or expired otp');
         }
 
-        await this.prisma.otp.delete({
-            where: {
-                id: otp.id,
-            },
-        });
-
-        return true;
+        if (otp) {
+            // Optionally, delete the OTP after verification to prevent reuse
+            await this.prisma.otp.delete({
+              where: { id: otp.id },
+            });
+            return true;
+          }
+          return false;
     }
 }

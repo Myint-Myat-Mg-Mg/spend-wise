@@ -60,7 +60,7 @@ describe('AuthService', () => {
       updatedAt: new Date(),
     });
     (otpService.createOtp as jest.Mock).mockResolvedValue({ code: '123456' });
-    // (emailService.sendEmail as jest.Mock).mockResolvedValue({ messageId: 'msgid' });
+    (emailService.sendEmail as jest.Mock).mockResolvedValue({ messageId: 'msgid' });
 
     const result = await service.registerUser({
       name: 'Ko Zin',
@@ -71,7 +71,7 @@ describe('AuthService', () => {
     expect(userService.findByEmail).toHaveBeenCalledWith('kozin@gmail.com');
     expect(userService.create).toHaveBeenCalled();
     expect(otpService.createOtp).toHaveBeenCalledWith('user-uuid', 'SIGNUP');
-    // expect(emailService.sendEmail).toHaveBeenCalled();
+    expect(emailService.sendEmail).toHaveBeenCalled();
     expect(result).toEqual({
       message: 'User registered successfully. Please verify your email with the OTP sent.',
     });
