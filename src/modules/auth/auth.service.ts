@@ -78,7 +78,7 @@ export class  AuthService {
         throw new BadRequestException('Invalid OTP');
     }
 
-    async login(userLoginDto: UserLoginDto): Promise<{ message: string }> {
+    async login(userLoginDto: UserLoginDto): Promise<{ access_token: string }> {
         const { email, password } = userLoginDto;
 
         const user = await this.userService.findByEmail(email);
@@ -91,42 +91,14 @@ export class  AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const otp = await this.otpService.createOtp(user.id, OtpPurpose.LOGIN);
-        
-        const sendEmailDto: SendEmailDto = {
-            from: {
-                name: this.configService.get<string>('APP_NAME') || 'Spend-Wise',
-                address: this.configService.get<string>('FROM_EMAIL') || 'no-reply@spend-wise.com',
-            },
-            recipients: [{
-                name: user.name,
-                address: user.email,
-            }],
-            subject: 'Verify your email for Spend-Wise',
-            html: `<p>Your OTP code is <strong>${otp.code}</strong>. It expires in 1 minute.</p>`,
-        };
+        const payload = { username: user.email, sub: user.id };
+        const access_token = this.jwtService.sign(payload, {
+            secret: process.env.JWT_SECRET,
+            expiresIn: '3600s',
+        });
 
-        await this.emailService.sendEmail(sendEmailDto);
+        return { access_token };
 
-        return { message: 'OTP sent to your email. Please verify to complete login.'};
-    }
-
-    async verifyLoginOtp(email: string, code: string): Promise<{ access_token: string }> {
-        const user = await this.userService.findByEmail(email);
-        if (!user) {
-            throw new BadRequestException('User not found');
-        }
-
-        const isValid = await this.otpService.verifyOtp(user.id, OtpPurpose.LOGIN, code);
-        if (isValid) {
-            const payload = { username: user.email, sub: user.id };
-            return {
-                access_token: this.jwtService.sign(payload,{
-                    secret:process.env.JWT_SECRET
-                }),
-            };
-        }
-        throw new BadRequestException('Invalid or expired OTP');
     }
 
     async forgotPassword(email: string): Promise<{ message: string }> {
@@ -154,13 +126,39 @@ export class  AuthService {
         return { message: 'OTP sent to your email. Please verify to reset your password.'};
     }
 
-    async resetPassword(userId: string, code: string, newPassword: string): Promise<{ message: string }> {
-        const isValid = await this.otpService.verifyOtp(userId, OtpPurpose.FORGOT_PASSWORD, code);
-        if (!isValid) {
+    async verifyForgotPasswordOTP(code: string): Promise<{ resetToken: string }> {
+        const otpDetails = await this.otpService.findByCode(code, OtpPurpose.FORGOT_PASSWORD);
+    
+        if (!otpDetails) {
+            throw new BadRequestException('Invalid OTP or OTP has expired.');
+        }
+    
+        const resetToken = this.jwtService.sign({userId: otpDetails.userId}, {
+            secret: process.env.JWT_SECRET,
+            expiresIn: '15m', // Reset token valid for 15 minutes
+        });
+
+        return  { resetToken };
+    }
+
+    async resetPassword( newPassword: string, confirmNewPassword: string, resetToken: string ): Promise<{ message: string }> {
+        if (newPassword !== confirmNewPassword) {
+          throw new BadRequestException('Passwords do not match');
+        }
+    
+        try {
+            const payload = this.jwtService.verify(resetToken, {
+                secret: process.env.JWT_SECRET,
+            });
+    
+            const userId = payload.userId;
             const hashedPassword = await bcrypt.hash(newPassword, 10);
             await this.userService.updatePassword(userId, hashedPassword);
-            return { message: 'Password reset successfully.'};
+    
+            return { message: 'Password reset successfully.' };
+        } catch (error) {
+            console.log( error )
+            throw new BadRequestException('Invalid or expired reset token');
         }
-        throw new BadRequestException('Invalid OTP');
     }
 }

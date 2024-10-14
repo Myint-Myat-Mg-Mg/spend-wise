@@ -34,6 +34,18 @@ export class OtpService {
         return otp;
     }
 
+    async findByCode(code: string, purpose: OtpPurpose): Promise<Otp | null> {
+        const otp = await this.prisma.otp.findFirst({
+            where: {
+                code,
+                purpose,
+                expiresAt: { gte: new Date() },
+            },
+        });
+
+        return otp;
+    }
+
     async verifyOtp(userId: string, purpose: OtpPurpose, code: string): Promise<boolean> {
         const otp = await this.prisma.otp.findFirst({
             where: {

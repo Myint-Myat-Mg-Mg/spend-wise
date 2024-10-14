@@ -1,9 +1,10 @@
-import { Controller, Post, Body, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Body, ValidationPipe, Req } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
-import { UserRegisterDto, UserLoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
+import { UserRegisterDto, UserLoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, VerifyForgotPasswordOtpDto } from './dto/auth.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BadRequestException } from '@nestjs/common';
+import { Request } from 'express';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -28,18 +29,10 @@ export class AuthController {
 
     @Post('login')
     @ApiOperation({ summary: 'Login a user with email and password' })
-    @ApiResponse({ status: 200, description: 'OTP sent to email for login.' })
+    @ApiResponse({ status: 200, description: 'User login successful with JWT token.' })
     @ApiResponse({ status: 401, description: 'Invalid credentials.' })
     async login(@Body(ValidationPipe) userLoginDto: UserLoginDto) {
         return this.authService.login(userLoginDto);
-    }
-
-    @Post('verify-login-otp')
-    @ApiOperation({ summary: 'Verify user OTP and receive JWT token' })
-    @ApiResponse({ status: 200, description: 'Login successful. JWT token issued.' })
-    @ApiResponse({ status: 400, description: 'Invalid or expired OTP.' })
-    async verifyLoginOtp(@Body(ValidationPipe) verifyOtpDto: VerifyOtpDto) {
-        return this.authService.verifyLoginOtp(verifyOtpDto.email, verifyOtpDto.code);
     }
 
     @Post('forgot-password')
@@ -50,17 +43,31 @@ export class AuthController {
         return this.authService.forgotPassword(forgotPasswordDto.email);
     }
 
+    @Post('verify-otp')
+    @ApiOperation({ summary: 'Verify OTP for password reset' })
+    @ApiResponse({ status: 200, description: 'OTP verified successfully.' })
+    @ApiResponse({ status: 400, description: 'Invalid OTP or OTP has expired.' })
+    async verifyForgotPasswordOTP(@Body(ValidationPipe) dto: VerifyForgotPasswordOtpDto) {
+        return this.authService.verifyForgotPasswordOTP(dto.code);
+    }
+
     @Post('reset-password')
     @ApiOperation({ summary: 'Reset user password with new password and OTP' })
     @ApiResponse({ status: 200, description: 'Password reset successful.' })
     @ApiResponse({ status: 400, description: 'Invalid or expired OTP.' })
-    async resetPassword(@Body(ValidationPipe) resetPasswordDto: ResetPasswordDto) {
-        const { userId, code, newPassword, retypeNewPassword } = resetPasswordDto;
-        
-        if (newPassword!== retypeNewPassword) {
-            throw new BadRequestException('Passwords do not match.');
+    async resetPassword(
+        @Body(ValidationPipe) dto: ResetPasswordDto, 
+        @Req()  req: Request
+    ) {
+        const authorization = req.headers['authorization'];
+
+        if (!authorization || !authorization.startsWith('Bearer ')) { 
+            throw new BadRequestException('Authorization token is missing or invalid.')
         }
 
-        return this.authService.resetPassword(userId, code, newPassword);
+        const resetToken = authorization.split(' ')[1];
+        
+        const { newPassword, comfirmNewPassword } = dto;
+        return this.authService.resetPassword( newPassword, comfirmNewPassword, resetToken);
     }
 }

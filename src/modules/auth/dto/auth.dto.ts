@@ -42,15 +42,14 @@ export class ForgotPasswordDto {
     email: string;
 }
 
-export class ResetPasswordDto {
-    @IsUUID()
-    userId: string;
-
-    @ApiProperty({ example: '123456' })
+export class VerifyForgotPasswordOtpDto {
+    @ApiProperty({ example: '123456', description: 'OTP code sent to email' })
     @IsNotEmpty()
-    @Length(6, 6)
+    @Length(6, 6, { message: 'OTP code must be exactly 6 characters.' })
     code: string;
+  }
 
+export class ResetPasswordDto {
     @ApiProperty({ example: 'password123' })
     @IsNotEmpty()
     @MinLength(6)
@@ -59,5 +58,7 @@ export class ResetPasswordDto {
     @ApiProperty({ example: 'password123' })
     @IsNotEmpty()
     @MinLength(6)
-    retypeNewPassword: string;
+    comfirmNewPassword: string;
+
+    resetToken: string;
 }
