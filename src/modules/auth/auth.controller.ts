@@ -63,7 +63,7 @@ export class AuthController {
 
         if (!authorization || !authorization.startsWith('Bearer ')) { 
             throw new BadRequestException('Authorization token is missing or invalid.')
-        }
+        } 
 
         const resetToken = authorization.split(' ')[1];
         

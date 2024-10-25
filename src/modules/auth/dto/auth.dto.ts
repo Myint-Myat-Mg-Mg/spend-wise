@@ -27,6 +27,7 @@ export class UserLoginDto {
 }
 
 export class VerifyOtpDto {
+    @ApiProperty({ example: "kozin@gmail.com"})
     @IsEmail()
     email: string;
 

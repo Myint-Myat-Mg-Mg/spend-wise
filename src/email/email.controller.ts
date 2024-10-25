@@ -14,8 +14,9 @@ export class MailerController {
     @ApiResponse({ status: 200, description: 'Email sent successfully.' })
     async sendEmail(@Body() sendEmailDto: SendEmailDto) {
         return await this.emailService.sendEmail(sendEmailDto);
-    }
+    } 
 }
+
     // async sendMail() {
     //     const dto: SendEmailDto = {
     //         from: { name: 'Ko Zin', address: 'kozin@gmail.com'},
