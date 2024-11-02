@@ -11,6 +11,9 @@ import { SendEmailDto } from 'src/email/email.interface';
 import { promises } from 'dns';
 import { retry } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
+import { UpdateUserDto } from '../user/updateuser.dto';
+import { UserModule } from '../user/user.module';
+import { isThursday } from 'date-fns';
 
 
 @Injectable()
@@ -98,7 +101,6 @@ export class  AuthService {
         });
 
         return { access_token };
-
     }
 
     async forgotPassword(email: string): Promise<{ message: string }> {

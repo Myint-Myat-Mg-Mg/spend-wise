@@ -67,6 +67,7 @@ enum OtpPurpose {
   LOGIN
   FORGOT_PASSWORD
   DELETE_USER
+  
 }
 
 enum AccountType {
