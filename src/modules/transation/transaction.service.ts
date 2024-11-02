@@ -3,8 +3,6 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { CreateTransactionDto } from "./transaction.dto";
 import { Transaction, TransactionType } from "@prisma/client";
 import { UpdateTransactionDto } from './updatetransaction.dto';
-import { dot } from "node:test/reporters";
-
 
 @Injectable()
 export class TransactionService {
