@@ -3,6 +3,9 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AuthMiddleware } from './middleware/auth.middleware';
+import { MulterModule } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -21,6 +24,8 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/src/uploads/',
   })
+
+  app.use(AuthMiddleware);
 
   await app.listen(5000);
 }

@@ -1,13 +1,14 @@
 import { Controller, Post, Body, ValidationPipe, Req } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UserRegisterDto, UserLoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, VerifyForgotPasswordOtpDto } from './dto/auth.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtService } from '@nestjs/jwt';
 import { BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
 
 @ApiTags('Authentication')
 @Controller('auth')
+@ApiBearerAuth()
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 

@@ -1,28 +1,26 @@
 import { Injectable, ConflictException, InternalServerErrorException, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { UserService } from '../user/user.service';
+import { EmailService } from 'src/email/email.service';
+import { UserRegisterDto, UserLoginDto } from './dto/auth.dto'; 
 import { Prisma, User } from '@prisma/client';
-import { UserRegisterDto, UserLoginDto } from './dto/auth.dto';
 import { OtpService } from 'src/otp/otp.service';
 import { OtpPurpose } from '@prisma/client';
-import { EmailService } from 'src/email/email.service';
 import { SendEmailDto } from 'src/email/email.interface';
 import { promises } from 'dns';
 import { retry } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
-import { UpdateUserDto } from '../user/updateuser.dto';
 import { UserModule } from '../user/user.module';
 import { isThursday } from 'date-fns';
-
 
 @Injectable()
 export class  AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
-        private readonly otpService: OtpService,
         private readonly emailService: EmailService,
+        private readonly otpService: OtpService,
         private readonly configService: ConfigService,
     ) {}
 
@@ -161,6 +159,7 @@ export class  AuthService {
         } catch (error) {
             console.log( error )
             throw new BadRequestException('Invalid or expired reset token');
-        }
+        }  
     }
 }
+ 

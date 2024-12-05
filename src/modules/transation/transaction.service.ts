@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { CreateTransactionDto } from "./transaction.dto";
+import { CreateTransactionDto } from "./dto/transaction.dto";
 import { Transaction, TransactionType } from "@prisma/client";
-import { UpdateTransactionDto } from './updatetransaction.dto';
+import { UpdateTransactionDto } from './dto/updatetransaction.dto';
 
 @Injectable()
 export class TransactionService {
@@ -64,4 +64,49 @@ export class TransactionService {
             where: { id },
         });
     }
+
+    async addTransaction(body: any, file: Express.Multer.File, type: string) {
+        const { userId, accountId, amount, categoryTag, remark, description } = body;
+    
+        // Validate account
+        const account = await this.prisma.account.findFirst({
+          where: { id: accountId, userId },
+        });
+    
+        if (!account) {
+          throw new NotFoundException(`Account not found for user ID: ${userId}`);
+        }
+    
+        // Validate expense balance
+        if (type === 'EXPENSE' && account.balance < amount) {
+          throw new BadRequestException('Insufficient balance for this transaction.');
+        }
+    
+        // Adjust balance
+        const newBalance = type === 'INCOME' 
+          ? account.balance + amount 
+          : account.balance - amount;
+    
+        // Update account balance
+        await this.prisma.account.update({
+          where: { id: accountId },
+          data: { balance: newBalance },
+        });
+    
+        // Save transaction
+        const transaction = await this.prisma.transaction.create({
+          data: {
+            userId,
+            accountId,
+            type,
+            amount,
+            categoryTag,
+            remark,
+            description,
+            attachmentImage: file?.path, // Save file path
+          },
+        });
+    
+        return transaction;
+      }
 }

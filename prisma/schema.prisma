@@ -12,24 +12,33 @@ model User {
   name         String
   email        String        @unique
   password     String
-  image        String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now()) @updatedAt
+  image        String?  
+  isVerified   Boolean       @default(false)
   account      Account[]
   otps         Otp[]
   transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
 }
-
+ 
+ 
 model Otp {
   id        String     @id @default(uuid())
   code      String
   userId    String
+  user      User       @relation(fields: [userId], references: [id])
   purpose   OtpPurpose
   expiresAt DateTime
   createdAt DateTime   @default(now())
-  user      User       @relation(fields: [userId], references: [id])
 
   @@index([code, purpose])
+}
+
+enum OtpPurpose {
+  SIGNUP
+  LOGIN
+  FORGOT_PASSWORD
+  DELETE_USER
 }
 
 model Account {
@@ -37,12 +46,12 @@ model Account {
   name           String
   balance        Int
   accountSubType AccountSubType
-  userId         String
   accountType    AccountType
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  userId         String
   user           User           @relation(fields: [userId], references: [id])
   transaction    Transaction[]  
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([accountType, accountSubType])
 }
@@ -51,23 +60,15 @@ model Transaction {
   id          String          @id @default(uuid())
   user        User            @relation(fields: [userId], references: [id])
   userId      String
+  accountId   String
+  account     Account         @relation(fields: [accountId], references: [id])
   categoryTag String
   remark      String
   amount      Int
   description String?
   attachmentImage String?
-  accountId   String
-  account     Account         @relation(fields: [accountId], references: [id])
-  createdAt   DateTime        @default(now())
   type        TransactionType
-}
-
-enum OtpPurpose {
-  SIGNUP
-  LOGIN
-  FORGOT_PASSWORD
-  DELETE_USER
-  
+  createdAt   DateTime        @default(now())
 }
 
 enum AccountType {
