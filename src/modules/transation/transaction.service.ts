@@ -65,9 +65,14 @@ export class TransactionService {
         });
     }
 
-    async addTransaction(body: any, file: Express.Multer.File, type: string) {
+    async addTransaction(body: any, file: Express.Multer.File, type: TransactionType) {
         const { userId, accountId, amount, categoryTag, remark, description } = body;
     
+
+        const parsedAmount = Number(amount);
+    if (isNaN(parsedAmount)) {
+        throw new BadRequestException('Invalid amount provided. It must be a number.');
+    }
         // Validate account
         const account = await this.prisma.account.findFirst({
           where: { id: accountId, userId },
@@ -78,35 +83,36 @@ export class TransactionService {
         }
     
         // Validate expense balance
-        if (type === 'EXPENSE' && account.balance < amount) {
+        if (type === 'EXPENSE' && account.balance < parsedAmount) {
           throw new BadRequestException('Insufficient balance for this transaction.');
         }
     
         // Adjust balance
         const newBalance = type === 'INCOME' 
-          ? account.balance + amount 
-          : account.balance - amount;
+          ? account.balance + parsedAmount 
+          : account.balance - parsedAmount;
     
-        // Update account balance
+       // Update account balance
         await this.prisma.account.update({
           where: { id: accountId },
           data: { balance: newBalance },
         });
     
-        // Save transaction
+        // Save transact ion
         const transaction = await this.prisma.transaction.create({
           data: {
             userId,
             accountId,
             type,
-            amount,
+            amount: parsedAmount,
             categoryTag,
             remark,
             description,
             attachmentImage: file?.path, // Save file path
           },
         });
-    
+
         return transaction;
-      }
+      
+     }
 }

@@ -41,12 +41,12 @@ export class UserController {
     return this.userService.updateUserProfile(id, data);
   }
 
-  @Post()
-  @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully.' })
-  create(@Body() CreateUserDto) {
-    return this.userService.create(CreateUserDto);
-  }
+  // @Post()
+  // @ApiOperation({ summary: 'Create a new user' })
+  // @ApiResponse({ status: 201, description: 'User created successfully.' })
+  // create(@Body() CreateUserDto) {
+  //   return this.userService.create(CreateUserDto);
+  // }
 
 
   @Delete(':id')

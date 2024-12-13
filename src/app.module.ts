@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthMiddleware } from './middleware/auth.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { WalletController } from './modules/wallet/wallet.controller';
@@ -51,10 +50,6 @@ import * as Joi from 'joi';
   AccountModule,
 ],
   controllers: [AppController],
-  providers: [AppService, AuthMiddleware],
+  providers: [AppService],
 }) 
-export class AppModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}

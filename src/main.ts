@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AuthMiddleware } from './middleware/auth.middleware';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 
@@ -25,8 +24,7 @@ async function bootstrap() {
     prefix: '/src/uploads/',
   })
 
-  app.use(AuthMiddleware);
-
   await app.listen(5000);
 }
 bootstrap();
+ 

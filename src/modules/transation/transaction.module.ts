@@ -8,10 +8,28 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { OtpService } from 'src/otp/otp.service';
 import { EmailService } from 'src/email/email.service';
-import { multerConfig } from 'src/config/upload.config';
-
+import { MulterModule } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 @Module({
-  imports: [ AuthModule, multerConfig ],
+  imports: [ AuthModule, 
+    MulterModule.register({
+      storage: diskStorage({
+        destination: './uploads/profile-images',
+        filename: (req, file, callback) => {
+          const filename: string = `${uuidv4()}${path.extname(file.originalname)}`;
+          callback(null, filename);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+    })
+   ],
   controllers: [TransactionController],
   providers: [TransactionService, PrismaService, AuthService, UserService, JwtService, OtpService, EmailService],
   exports: [TransactionService],
