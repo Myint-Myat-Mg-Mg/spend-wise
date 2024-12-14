@@ -17,6 +17,7 @@ CREATE TABLE "User" (
     "email" STRING NOT NULL,
     "password" STRING NOT NULL,
     "image" STRING,
+    "isVerified" BOOL NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -27,7 +28,8 @@ CREATE TABLE "User" (
 CREATE TABLE "Otp" (
     "id" STRING NOT NULL,
     "code" STRING NOT NULL,
-    "userId" STRING NOT NULL,
+    "userId" STRING,
+    "email" STRING NOT NULL,
     "purpose" "OtpPurpose" NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -40,9 +42,9 @@ CREATE TABLE "Account" (
     "id" STRING NOT NULL,
     "name" STRING NOT NULL,
     "balance" INT4 NOT NULL,
-    "userId" STRING NOT NULL,
-    "accountType" "AccountType" NOT NULL,
     "accountSubType" "AccountSubType" NOT NULL,
+    "accountType" "AccountType" NOT NULL,
+    "userId" STRING NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -53,14 +55,14 @@ CREATE TABLE "Account" (
 CREATE TABLE "Transaction" (
     "id" STRING NOT NULL,
     "userId" STRING NOT NULL,
+    "accountId" STRING NOT NULL,
     "categoryTag" STRING NOT NULL,
     "remark" STRING NOT NULL,
     "amount" INT4 NOT NULL,
     "description" STRING,
     "attachmentImage" STRING,
-    "accountId" STRING NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "type" "TransactionType" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
 );
@@ -75,7 +77,7 @@ CREATE INDEX "Otp_code_purpose_idx" ON "Otp"("code", "purpose");
 CREATE INDEX "Account_accountType_accountSubType_idx" ON "Account"("accountType", "accountSubType");
 
 -- AddForeignKey
-ALTER TABLE "Otp" ADD CONSTRAINT "Otp_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Otp" ADD CONSTRAINT "Otp_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -1,10 +1,11 @@
 import { Controller, Post, Body, ValidationPipe, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { UserRegisterDto, UserLoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, VerifyForgotPasswordOtpDto } from './dto/auth.dto';
+import { UserRegisterDto, UserLoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, VerifyForgotPasswordOtpDto, ResentOtp } from './dto/auth.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import { BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
+import { OtpPurpose } from '@prisma/client';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -14,7 +15,7 @@ export class AuthController {
 
     @Post('register')
     @ApiOperation({ summary: 'Register a new user' })
-    @ApiResponse({ status: 201, description: 'User registered successfully. OTP sent to email.' })
+    @ApiResponse({ status: 201, description: 'User registered success. OTP sent to email.' })
     @ApiResponse({ status: 409, description: 'Email already in use.' })
     async register(@Body(ValidationPipe) userRegisterDto: UserRegisterDto) {
         return this.authService.registerUser(userRegisterDto);
@@ -26,6 +27,15 @@ export class AuthController {
     @ApiResponse({ status: 400, description: 'Invalid or expired OTP.' })
     async verifyEmail(@Body(ValidationPipe) verifyOtpDto: VerifyOtpDto) {
         return this.authService.verifyEmail(verifyOtpDto.email, verifyOtpDto.code);
+    }
+
+    @Post('resend-otp')
+    @ApiOperation({ summary: 'Resend OTP to user email' })
+    @ApiResponse({ status: 200, description: 'OTP sent to email again.' })
+    @ApiResponse({ status: 400, description: 'User with this email does not exist.' })
+    async resendOtp(@Body() resentOtpDto: ResentOtp,) {
+        const { email, purpose } = resentOtpDto;
+        return await this.authService.resendOtp(email, purpose);
     }
 
     @Post('login')

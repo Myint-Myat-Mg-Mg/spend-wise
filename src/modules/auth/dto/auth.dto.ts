@@ -1,5 +1,6 @@
-import { IsEmail, IsNotEmpty, IsUUID, Length, MinLength, Matches } from "class-validator";
+import { IsEmail, IsNotEmpty, IsUUID, Length, MinLength, Matches, IsEnum } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { OtpPurpose } from "@prisma/client";
 
 export class UserRegisterDto {
     @ApiProperty({ example: 'Ko Zin' })
@@ -35,6 +36,16 @@ export class VerifyOtpDto {
     @IsNotEmpty()
     @Length(6, 6)
     code: string;
+}
+
+export class ResentOtp{
+    @ApiProperty({ example: 'kozin@gmail.com' })
+    @IsEmail()
+    email: string;
+
+    @ApiProperty ({ example: "SIGNUP" })
+    @IsEnum(OtpPurpose)
+    purpose: OtpPurpose;
 }
 
 export class ForgotPasswordDto {

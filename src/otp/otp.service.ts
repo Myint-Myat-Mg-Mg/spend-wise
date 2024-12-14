@@ -1,7 +1,8 @@
-import { Injectable,BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OtpPurpose, Otp, Prisma } from '@prisma/client';
-import { addMinutes } from 'date-fns';
+import { addMinutes, differenceInSeconds } from 'date-fns';
+import { EmailModule } from '../email/email.module';
 
 @Injectable()
 export class OtpService {
@@ -11,13 +12,13 @@ export class OtpService {
         return Math.floor(100000 + Math.random() * 900000).toString();
     }
 
-    async createOtp(userId: string, purpose: OtpPurpose): Promise<Otp> {
+    async createOtp(email: string, purpose: OtpPurpose): Promise<Otp> {
         const code = this.generateOTP();
         const expiresAt = addMinutes(new Date(), 10);
 
         await this.prisma.otp.deleteMany({
             where: {
-                userId,
+                email,
                 purpose,
             },
         });
@@ -27,7 +28,7 @@ export class OtpService {
                 code,
                 purpose,
                 expiresAt,
-                userId,
+                email,
             },
         });
 
@@ -46,10 +47,10 @@ export class OtpService {
         return otp;
     }
 
-    async verifyOtp(userId: string, purpose: OtpPurpose, code: string): Promise<boolean> {
+    async verifyOtp(email: string, purpose: OtpPurpose, code: string): Promise<boolean> {
         const otp = await this.prisma.otp.findFirst({
             where: {
-                userId,
+                email,
                 purpose,
                 code,
                 expiresAt: {
@@ -70,5 +71,31 @@ export class OtpService {
             return true;
           }
           return false;
+    }
+
+    async resendOtp(email: string, purpose: OtpPurpose): Promise<Otp> {
+        const existingOtp = await this.prisma.otp.findFirst({
+            where: {
+                email,
+                purpose,
+                expiresAt: {
+                    gt: new Date(), // Ensure OTP hasn't expired
+                },
+            },
+        });
+
+        if (existingOtp) {
+            const timeRemaining = differenceInSeconds(existingOtp.expiresAt, new Date());
+
+            // Prevent frequent OTP resends
+            if (timeRemaining > 60) {
+                throw new BadRequestException(
+                    `Please wait for ${Math.ceil(timeRemaining / 10)} minutes before requesting a new OTP.`
+                );
+            }
+        }
+
+        // Create and return a new OTP
+        return this.createOtp(email, purpose);
     }
 }
