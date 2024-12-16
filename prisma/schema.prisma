@@ -25,11 +25,11 @@ model Otp {
   id        String     @id @default(uuid())
   code      String
   userId    String?
+  user      User?      @relation(fields: [userId], references: [id])
   email     String
   purpose   OtpPurpose
   expiresAt DateTime
   createdAt DateTime   @default(now())
-  user      User?      @relation(fields: [userId], references: [id])
 
   @@index([code, purpose])
 }

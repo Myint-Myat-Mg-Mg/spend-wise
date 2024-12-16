@@ -36,15 +36,13 @@ export class OtpService {
     }
 
     async findByCode(code: string, purpose: OtpPurpose): Promise<Otp | null> {
-        const otp = await this.prisma.otp.findFirst({
+        return this.prisma.otp.findFirst({
             where: {
                 code,
                 purpose,
                 expiresAt: { gte: new Date() },
             },
         });
-
-        return otp;
     }
 
     async verifyOtp(email: string, purpose: OtpPurpose, code: string): Promise<boolean> {
@@ -88,9 +86,9 @@ export class OtpService {
             const timeRemaining = differenceInSeconds(existingOtp.expiresAt, new Date());
 
             // Prevent frequent OTP resends
-            if (timeRemaining > 60) {
+            if (timeRemaining > 0 && timeRemaining <= 60) {
                 throw new BadRequestException(
-                    `Please wait for ${Math.ceil(timeRemaining / 10)} minutes before requesting a new OTP.`
+                    `Please wait for ${60 - timeRemaining} seconds before requesting a new OTP.`
                 );
             }
         }
@@ -98,4 +96,31 @@ export class OtpService {
         // Create and return a new OTP
         return this.createOtp(email, purpose);
     }
+
+    async createOtpForgetPassword(email: string, purpose: OtpPurpose, userId?: string): Promise<Otp> {
+        const code = this.generateOTP();
+        const expiresAt = addMinutes(new Date(), 10);
+    
+        // Delete existing OTPs for the same email and purpose
+        await this.prisma.otp.deleteMany({
+            where: {
+                email,
+                purpose,
+            },
+        });
+    
+        // Create OTP record with userId
+        const otp = await this.prisma.otp.create({
+            data: {
+                code,
+                purpose,
+                expiresAt,
+                email,
+                userId, // Add userId to the database
+            },
+        });
+    
+        return otp;
+    }
+    
 }

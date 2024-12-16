@@ -27,7 +27,6 @@ export class  AuthService {
     async registerUser(dto: UserRegisterDto): Promise<{ message: string }> {
         const { email, password, name} = dto;
 
-
         const existingUser = await this.userService.findByEmail(email);
         if (existingUser) {
             throw new ConflictException('Email already in use');
@@ -90,34 +89,59 @@ export class  AuthService {
     }
 
     async resendOtp(email: string, purpose: OtpPurpose): Promise<{ message: string }> {
-        // Check if an OTP already exists and is valid
-        const existingOtp = await this.prisma.otp.findFirst({
-            where: {
-                email,
-                purpose,
-                expiresAt: {
-                    gt: new Date(), // Ensure OTP hasn't expired
+        try {
+            // Check if an OTP already exists and is valid
+            const existingOtp = await this.prisma.otp.findFirst({
+                where: {
+                    email,
+                    purpose,
+                    expiresAt: {
+                        gt: new Date(), // Ensure OTP hasn't expired
+                    },
                 },
-            },
-        });
+            });
     
-        if (existingOtp) {
-            const timeRemaining = differenceInSeconds(existingOtp.expiresAt, new Date());
+            console.log('Existing OTP:', existingOtp);
     
-            // Prevent frequent OTP resends
-            if (timeRemaining > 60) {
-                throw new BadRequestException(
-                    `Please wait for ${Math.ceil(timeRemaining / 60)} minutes before requesting a new OTP.`
-                );
+            if (existingOtp) {
+                const timeRemaining = differenceInSeconds(existingOtp.expiresAt, new Date());
+    
+                // Prevent frequent OTP resends
+                if (timeRemaining > 0 && timeRemaining <= 60) {
+                    throw new BadRequestException(
+                        `Please wait for ${60 - timeRemaining} seconds before requesting a new OTP.`
+                    );
+                }
             }
-        }
     
-        // Create and send a new OTP
-        await this.otpService.createOtp(email, purpose);
-        return { message: 'OTP has been resent successfully. Please check your email.' };
+            // Create and send a new OTP
+            const otp = await this.otpService.createOtp(email, purpose);
+    
+            // Send email with the new OTP
+            const sendEmailDto: SendEmailDto = {
+                from: {
+                    name: this.configService.get<string>('APP_NAME') || 'Spend-Wise',
+                    address: this.configService.get<string>('FROM_EMAIL') || 'no-reply@spend-wise.com',
+                },
+                recipients: [
+                    {
+                        name: 'User',
+                        address: email,
+                    },
+                ],
+                subject: 'Your OTP Code',
+                html: `<p>Your OTP code is <strong>${otp.code}</strong>. It expires in 10 minutes.</p>`,
+            };
+    
+            await this.emailService.sendEmail(sendEmailDto);
+    
+            return { message: 'OTP has been resent successfully. Please check your email.' };
+        } catch (error) {
+            console.error('Error resending OTP:', error);
+            throw new InternalServerErrorException('Failed to resend OTP.');
+        }
     }
-
-
+    
     async login(userLoginDto: UserLoginDto): Promise<{ access_token: string }> {
         const { email, password } = userLoginDto;
 
@@ -146,7 +170,7 @@ export class  AuthService {
             throw new BadRequestException('User with this email does not exist');
         }
 
-        const otp = await this.otpService.createOtp(user.id, OtpPurpose.FORGOT_PASSWORD);
+        const otp = await this.otpService.createOtpForgetPassword(email, OtpPurpose.FORGOT_PASSWORD, user.id);
 
         const sendEmailDto: SendEmailDto = {
             from: {
@@ -171,8 +195,13 @@ export class  AuthService {
         if (!otpDetails) {
             throw new BadRequestException('Invalid OTP or OTP has expired.');
         }
+
+        const { email, userId } = otpDetails;
+        if ( !email || !userId ) {
+            throw new BadRequestException('User ID or email is missing in the OTP details.');
+        }
     
-        const resetToken = this.jwtService.sign({userId: otpDetails.userId}, {
+        const resetToken = this.jwtService.sign({ userId, email }, {
             secret: process.env.JWT_SECRET,
             expiresIn: '15m', // Reset token valid for 15 minutes
         });
