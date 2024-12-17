@@ -53,4 +53,35 @@ export class UserService {
       where: { id } 
     });
   }
+
+  async getUserProfile(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        account: {
+          select: {
+            id: true,
+            name: true,
+            balance: true,
+            accountType: true,
+            accountSubType: true,
+            transaction: {
+              select: {
+                id: true,
+                type: true, // Income or Expense
+                amount: true,
+                description: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+  
 }
