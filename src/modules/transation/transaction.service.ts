@@ -3,116 +3,113 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { CreateTransactionDto } from "./dto/transaction.dto";
 import { Transaction, TransactionType } from "@prisma/client";
 import { UpdateTransactionDto } from './dto/updatetransaction.dto';
+import { AccountService } from "../account/account.service";
 
 @Injectable()
 export class TransactionService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly accountService: AccountService,
+    ) {}
 
-    async create(dto: CreateTransactionDto): Promise<Transaction> {
-        const { userId, accountId, amount, type } = dto;
-        const account = await this.prisma.account.findUnique({
-            where: { id: accountId },
+    async createTransaction(userId: string, data: CreateTransactionDto){
+        const { accountId, type, amount, categoryTag, remark, description, attachmentImage } = data;
+        const account = await this.prisma.account.findFirst({
+            where: { id: accountId, userId },
         });
 
-        if(!account) throw new NotFoundException('Account not found');
+        if(!account) 
+            throw new NotFoundException(`Account with ID ${accountId} not found for user with ID ${userId}.`);
 
-        const updateBalance = type === TransactionType.INCOME
-         ? account.balance + amount
-         : account.balance - amount;
-        
-        await this.prisma.account.update({
-            where: { id: accountId },
-            data: { balance: updateBalance },
-        });
+        if (type === 'EXPENSE' && account.balance < amount) {
+            throw new BadRequestException('Insufficient balance for this transaction.');
+        }
 
-        return this.prisma.transaction.create({
+        const transaction = await this.prisma.transaction.create({
             data: {
-                ...dto,
                 userId,
                 accountId,
-            },  
-        });
-    }
-
-    async findAll(userId: string): Promise<Transaction[]> {
-        return this.prisma.transaction.findMany({
-            where: { userId },
-            include: {
-                account: true,
+                categoryTag,
+                remark,
+                amount,
+                description,
+                attachmentImage,
+                type,
             },
         });
-    }
-   
-    async findOne(id: string): Promise<Transaction> {
-        const transaction = await this.prisma.transaction.findUnique({
-            where: { id },
-            include: { account: true },
-        });
-        if (!transaction) throw new NotFoundException('Transaction not found');
+
+        if (type === 'INCOME') {
+            await this.prisma.account.update({
+                where: { id: accountId },
+                data: { balance: account.balance + amount },
+            });
+        } else if (type === 'EXPENSE') {
+            await this.prisma.account.update({
+                where: { id: accountId },
+                data: { balance: account.balance - amount },
+            });
+        }
+
         return transaction;
     }
-
-    async update(id: string, dto: UpdateTransactionDto): Promise<Transaction> {
-        return this.prisma.transaction.update({
-            where: { id },
-            data: dto,
-        });
-    }
-
-    async remove(id: string): Promise<Transaction> {
-        return this.prisma.transaction.delete({
-            where: { id },
-        });
-    }
-
-    async addTransaction(body: any, file: Express.Multer.File, type: TransactionType) {
-        const { userId, accountId, amount, categoryTag, remark, description } = body;
-    
-
-        const parsedAmount = Number(amount);
-    if (isNaN(parsedAmount)) {
-        throw new BadRequestException('Invalid amount provided. It must be a number.');
-    }
-        // Validate account
-        const account = await this.prisma.account.findFirst({
-          where: { id: accountId, userId },
-        });
-    
-        if (!account) {
-          throw new NotFoundException(`Account not found for user ID: ${userId}`);
-        }
-    
-        // Validate expense balance
-        if (type === 'EXPENSE' && account.balance < parsedAmount) {
-          throw new BadRequestException('Insufficient balance for this transaction.');
-        }
-    
-        // Adjust balance
-        const newBalance = type === 'INCOME' 
-          ? account.balance + parsedAmount 
-          : account.balance - parsedAmount;
-    
-       // Update account balance
-        await this.prisma.account.update({
-          where: { id: accountId },
-          data: { balance: newBalance },
-        });
-    
-        // Save transact ion
-        const transaction = await this.prisma.transaction.create({
-          data: {
-            userId,
-            accountId,
-            type,
-            amount: parsedAmount,
-            categoryTag,
-            remark,
-            description,
-            attachmentImage: file?.path, // Save file path
-          },
-        });
-
-        return transaction;
-      
-     }
 }
+    // async findAll(userId: string): Promise<Transaction[]> {
+    //     return this.prisma.transaction.findMany({
+    //         where: { userId },
+    //         include: {
+    //             account: true,
+    //         },
+    //     });
+    // }
+
+    // async addTransaction(body: any, file: Express.Multer.File, type: TransactionType) {
+    //     const { userId, accountId, amount, categoryTag, remark, description } = body;
+    
+
+    //     const parsedAmount = Number(amount);
+    // if (isNaN(parsedAmount)) {
+    //     throw new BadRequestException('Invalid amount provided. It must be a number.');
+    // }
+    //     // Validate account
+    //     const account = await this.prisma.account.findFirst({
+    //       where: { id: accountId, userId },
+    //     });
+    
+    //     if (!account) {
+    //       throw new NotFoundException(`Account not found for user ID: ${userId}`);
+    //     }
+    
+    //     // Validate expense balance
+    //     if (type === 'EXPENSE' && account.balance < parsedAmount) {
+    //       throw new BadRequestException('Insufficient balance for this transaction.');
+    //     }
+    
+    //     // Adjust balance
+    //     const newBalance = type === 'INCOME' 
+    //       ? account.balance + parsedAmount 
+    //       : account.balance - parsedAmount;
+    
+    //    // Update account balance
+    //     await this.prisma.account.update({
+    //       where: { id: accountId },
+    //       data: { balance: newBalance },
+    //     });
+    
+    //     // Save transact ion
+    //     const transaction = await this.prisma.transaction.create({
+    //       data: {
+    //         userId,
+    //         accountId,
+    //         type,
+    //         amount: parsedAmount,
+    //         categoryTag,
+    //         remark,
+    //         description,
+    //         attachmentImage: file?.path, // Save file path
+    //       },
+    //     });
+
+    //     return transaction;
+      
+    //  }
+//}

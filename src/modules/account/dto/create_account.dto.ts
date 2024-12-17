@@ -4,20 +4,20 @@ import { AccountType, AccountSubType } from "@prisma/client";
 
 export class CreateAccountDto {
     
-    @ApiProperty()
+    @ApiProperty({ description: 'Name of the account'})
     @IsString()
     @IsNotEmpty()
     name: string;
     
-    @ApiProperty()
+    @ApiProperty({ description: 'Type of the account', enum: AccountType })
     @IsEnum(AccountType)
     accountType: AccountType;
     
-    @ApiProperty()
+    @ApiProperty({ description: 'Subtype of the account', enum: AccountSubType })
     @IsEnum(AccountSubType)
     accountSubType: AccountSubType;
 
-    @ApiProperty()
+    @ApiProperty({ description: 'Initial balance of the account' })
     @IsInt()
     @Min(0)
     balance: number;

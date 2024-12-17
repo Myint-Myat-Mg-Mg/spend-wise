@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { User } from "@prisma/client";
+import { JwtPayload } from "jsonwebtoken";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -19,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: any): Promise<User> {
+    async validate(payload: JwtPayload): Promise<User> {
         const user = await this.userService.findById(payload.sub);
         if (!user) {
             throw new UnauthorizedException('Invalid token');

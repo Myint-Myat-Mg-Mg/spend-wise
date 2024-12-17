@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Account, AccountType, AccountSubType } from '@prisma/client';
 import { CreateAccountDto } from './dto/create_account.dto';
+import { TransactionService } from '../transation/transaction.service';
 
 @Injectable()
 export class AccountService {
@@ -56,6 +57,66 @@ export class AccountService {
         }
       }
 
+
+      async getUserAccountsWithTotals(userId: string) {
+        const accounts = await this.prisma.account.findMany({
+          where: { userId },
+          include: { transaction: true },
+        });
+
+        if(!accounts.length) {
+          throw new NotFoundException(`No accounts found for user with ID ${userId}.`);
+        }
+
+        const result = accounts.map((account) => {
+          const totalIncome = account.transaction
+            .filter((txn) => txn.type === 'INCOME')
+            .reduce((sum, txn) => sum + txn.amount, 0);
+
+          const totalExpenses = account.transaction
+            .filter((txn) => txn.type === 'EXPENSE')
+            .reduce((sum, txn) => sum + txn.amount, 0);
+
+          return {
+            ...account,
+            totalIncome,
+            totalExpenses,
+            updatedBalance: account.balance + totalIncome - totalExpenses,
+          };
+        });
+
+        return result;
+      }
+    
+      // Get a specific account for a user
+      async getUserAccount(userId: string, accountId: string) {
+        const account = await this.prisma.account.findFirst({
+          where: { id: accountId, userId },
+          include: { transaction: true },
+        });
+    
+        if (!account) {
+          throw new NotFoundException(
+            `Account with ID ${accountId} not found for user with ID ${userId}.`,
+          );
+        }
+
+        const totalIncome = account.transaction
+          .filter((txn) => txn.type === 'INCOME')
+          .reduce((sum, txn) => sum + txn.amount, 0);
+
+        const totalExpenses = account.transaction
+          .filter((txn) => txn.type === 'EXPENSE')
+          .reduce((sum, txn) => sum + txn.amount, 0);
+    
+        return {
+          ...account,
+          totalIncome,
+          totalExpenses,
+          updateBalance: account.balance + totalIncome - totalExpenses,
+        };
+      }
+
       async getUserAccounts(userId: string) {
         const accounts = await this.prisma.account.findMany({
           where: { userId },
@@ -66,20 +127,5 @@ export class AccountService {
         }
     
         return accounts;
-      }
-    
-      // Get a specific account for a user
-      async getUserAccount(userId: string, accountId: string) {
-        const account = await this.prisma.account.findFirst({
-          where: { id: accountId, userId },
-        });
-    
-        if (!account) {
-          throw new NotFoundException(
-            `Account with ID ${accountId} not found for user with ID ${userId}.`,
-          );
-        }
-    
-        return account;
       }
 }

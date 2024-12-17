@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TransactionService } from './transaction.service';
 import { TransactionController } from './transaction.controller';
+import { AccountModule } from '../account/account.module';
 import { AuthService } from '../auth/auth.service';
 import { AuthModule } from '../auth/auth.module';
 import { UserService } from '../user/user.service';
@@ -12,8 +13,9 @@ import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { Account } from '@prisma/client';
 @Module({
-  imports: [ AuthModule, 
+  imports: [ AccountModule, AuthModule, 
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/profile-images',

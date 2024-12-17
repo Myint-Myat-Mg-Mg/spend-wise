@@ -18,5 +18,6 @@ import { EmailService } from 'src/email/email.service';
   ],
   providers: [AccountService, PrismaService, AuthService, UserService, OtpService, EmailService],
   controllers: [AccountController],
+  exports: [AccountService]
 })
 export class AccountModule {}

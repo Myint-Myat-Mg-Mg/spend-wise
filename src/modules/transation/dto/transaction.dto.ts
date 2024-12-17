@@ -3,10 +3,6 @@ import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'cl
 import { AccountType, AccountSubType, TransactionType } from '@prisma/client';
 
 export class CreateTransactionDto {
-  @ApiProperty({ description: 'User ID associated with the transaction' })
-  @IsUUID()
-  userId: string;
-
   @ApiProperty({ description: 'Account ID associated with the transaction' })
   @IsUUID()
   accountId: string;
