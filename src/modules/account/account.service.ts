@@ -81,7 +81,7 @@ export class AccountService {
           return {
             id: account.id,
             name: account.name,
-            accountType: account.accountSubType,
+            accountType: account.accountType,
             accountSubType: account.accountSubType,
             userId: account.userId,
             transaction: [],
