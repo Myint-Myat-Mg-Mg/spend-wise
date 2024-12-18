@@ -16,14 +16,24 @@ export class TransactionController {
 
     @Post()
     @ApiOperation({ summary: 'Create a new transaction (Income/Expense)' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ description: 'Transaction details with optional image', type: CreateTransactionDto })
     @ApiResponse({ status: 201, description: 'Transaction added sucessfully' })
     @ApiResponse({ status: 409, description: 'Transaction failed.' })
     @UseGuards(AuthGuard('jwt'))
+    @UseInterceptors(FileInterceptor('attachmentImage', { dest: './uploads/transaction-images' }))
     async createTransaction(
         @Request() req,
         @Body() createTransactionDto: CreateTransactionDto,
+        @UploadedFile() attachmentImage?: Express.Multer.File,
     ) {
         const userId = req.user.id;
+
+        const transactionData = {
+            ...createTransactionDto,
+            attachmentImage: attachmentImage ? `/uploads/transaction-images/${attachmentImage.filename}` : undefined,
+        };
+        
         return this.transactionService.createTransaction(userId, createTransactionDto);
     }
 }

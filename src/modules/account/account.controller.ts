@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards } from "@nestjs/common";
 import { AccountService } from "./account.service";
 import { CreateAccountDto } from "./dto/create_account.dto";
+import { UpdateAccountNameDto } from "./dto/update_account.dto";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { JwtStrategy } from "../auth/jwt.strategy";
 import { JwtService } from '@nestjs/jwt';
@@ -38,5 +39,27 @@ export class AccountController {
     async getUserAccount(@Request() req, @Param('accountId') accountId: string,) {
       const userId = req.user.id;
       return this.accountService.getUserAccount(userId, accountId);
+    }
+
+    @Patch(':accountId/name')
+    @ApiOperation({ summary: 'To Change Account Name' })
+    @ApiResponse({ status: 200, description: 'Account rename successfully.' })
+    @UseGuards(AuthGuard('jwt'))
+    async editAccountName(
+      @Param('accountId') accountId: string,
+      @Request() req: any,
+      @Body() updateAccountNameDto: UpdateAccountNameDto,
+    ) {
+      const userId = req.user.id;
+      return this.accountService.editAccountName(userId, accountId, updateAccountNameDto.name);
+    }
+
+    @Delete(':accountId')
+    @ApiOperation({ summary: 'Delete a specific account for a user' })
+    @ApiResponse({ status: 200, description: 'Account deleted successfully.' })
+    @UseGuards(AuthGuard('jwt'))
+    async deleteAccount(@Request() req: any, @Param('accountId') accountId: string) {
+      const userId = req.user.id;
+      return this.accountService.deleteAccount(userId, accountId);
     }
 }

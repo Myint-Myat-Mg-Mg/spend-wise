@@ -3,7 +3,7 @@ import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'cl
 import { AccountType, AccountSubType, TransactionType } from '@prisma/client';
 
 export class CreateTransactionDto {
-  @ApiProperty({ description: 'Account ID associated with the transaction' })
+  @ApiProperty({ description: 'Account ID', example: '123e4567-e89b-12d3-a456-426614174000' })
   @IsUUID()
   accountId: string;
 
@@ -12,22 +12,22 @@ export class CreateTransactionDto {
   @IsNotEmpty()
   categoryTag: string;
 
-  @ApiProperty({ description: 'Remark for transaction', example: 'Monthly food' })
+  @ApiProperty({ description: 'Remark', example: 'Dinner with family' })
   @IsString()
   @IsNotEmpty()
   remark: string;
 
-  @ApiProperty({ description: 'Transaction amount in Kyats' })
+  @ApiProperty({ description: 'Transaction amount', example: 5000 })
   @IsInt()
   @Min(1)
   amount: number;
 
-  @ApiProperty({ description: 'Description of Transaction', required: false })
+  @ApiProperty({ description: 'Description (optional)', example: 'Spent on dinner', required: false })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'image'})
+  @ApiProperty({ description: 'Attachment image (optional)', type: 'string', format: 'binary', required: false})
   @IsOptional()
   @IsString()
   attachmentImage?: string;

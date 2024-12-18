@@ -12,7 +12,7 @@ export class TransactionService {
         private readonly accountService: AccountService,
     ) {}
 
-    async createTransaction(userId: string, data: CreateTransactionDto){
+    async createTransaction(userId: string, data: CreateTransactionDto, attachmentImageFile?: Express.Multer.File){
         const { accountId, type, amount, categoryTag, remark, description, attachmentImage } = data;
         const account = await this.prisma.account.findFirst({
             where: { id: accountId, userId },
@@ -21,9 +21,13 @@ export class TransactionService {
         if(!account) 
             throw new NotFoundException(`Account with ID ${accountId} not found for user with ID ${userId}.`);
 
-        if (type === 'EXPENSE' && account.balance < amount) {
+        if (type === TransactionType.EXPENSE && account.balance < amount) {
             throw new BadRequestException('Insufficient balance for this transaction.');
         }
+
+        const attachmentImagePath = attachmentImageFile
+            ? `/uploads/transaction-images/${attachmentImageFile.filename}`
+            : null;
 
         const transaction = await this.prisma.transaction.create({
             data: {
@@ -33,12 +37,12 @@ export class TransactionService {
                 remark,
                 amount,
                 description,
-                attachmentImage,
+                attachmentImage: attachmentImagePath,
                 type,
             },
         });
 
-        const updatedBalance = type === 'INCOME'
+        const updatedBalance = type === TransactionType.INCOME
         ? account.balance + amount
         : account.balance - amount;
 

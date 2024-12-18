@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { Account, AccountType, AccountSubType } from '@prisma/client';
 import { CreateAccountDto } from './dto/create_account.dto';
 import { TransactionService } from '../transation/transaction.service';
+import { uptime } from 'process';
 
 @Injectable()
 export class AccountService {
@@ -78,10 +79,17 @@ export class AccountService {
             .reduce((sum, txn) => sum + txn.amount, 0);
 
           return {
-            ...account,
+            id: account.id,
+            name: account.name,
+            accountType: account.accountSubType,
+            AccountSubType: account.accountSubType,
+            userId: account.userId,
+            transaction: [],
             totalIncome,
             totalExpenses,
             balance: account.balance,
+            createdAt: account.createdAt,
+            updatedAt: account.updatedAt,
           };
         });
       }
@@ -125,5 +133,43 @@ export class AccountService {
         }
     
         return accounts;
+      }
+
+      async deleteAccount(userId: string, accountId: string) {
+        const account = await this.prisma.account.findFirst({
+          where: { id: accountId, userId },
+        });
+
+        if(!account) {
+          throw new NotFoundException(`Account with ID ${accountId} not found for user with ID ${userId}.`);
+        }
+        
+        await this.prisma.$transaction([
+          this.prisma.transaction.deleteMany({
+            where: { accountId },
+          }),
+          this.prisma.account.delete({
+            where: { id: accountId },
+          }),
+        ]);
+
+        return { message: `Account with ID ${accountId} and its transactions have been deleted.` }
+      }
+
+      async editAccountName(userId: string, accountId: string, newName: string) {
+        const account = await this.prisma.account.findFirst({
+          where: { id: accountId, userId },
+        });
+
+        if(!account) {
+          throw new NotFoundException (`Account with ID ${accountId} not found for user with ID ${userId}.`);
+        }
+
+        const updatedAccount = await this.prisma.account.update({
+          where: { id: accountId },
+          data: { name: newName },
+        });
+
+        return updatedAccount;
       }
 }
