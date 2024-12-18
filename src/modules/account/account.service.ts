@@ -68,7 +68,7 @@ export class AccountService {
           throw new NotFoundException(`No accounts found for user with ID ${userId}.`);
         }
 
-        const result = accounts.map((account) => {
+        return accounts.map((account) => {
           const totalIncome = account.transaction
             .filter((txn) => txn.type === 'INCOME')
             .reduce((sum, txn) => sum + txn.amount, 0);
@@ -81,11 +81,9 @@ export class AccountService {
             ...account,
             totalIncome,
             totalExpenses,
-            updatedBalance: account.balance + totalIncome - totalExpenses,
+            balance: account.balance,
           };
         });
-
-        return result;
       }
     
       // Get a specific account for a user

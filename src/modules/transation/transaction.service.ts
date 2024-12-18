@@ -38,20 +38,17 @@ export class TransactionService {
             },
         });
 
-        if (type === 'INCOME') {
-            await this.prisma.account.update({
-                where: { id: accountId },
-                data: { balance: account.balance + amount },
-            });
-        } else if (type === 'EXPENSE') {
-            await this.prisma.account.update({
-                where: { id: accountId },
-                data: { balance: account.balance - amount },
-            });
-        }
+        const updatedBalance = type === 'INCOME'
+        ? account.balance + amount
+        : account.balance - amount;
 
-        return transaction;
-    }
+        await this.prisma.account.update({
+         where: { id: accountId },
+            data: { balance: updatedBalance },
+        });
+
+            return transaction;
+        }
 }
     // async findAll(userId: string): Promise<Transaction[]> {
     //     return this.prisma.transaction.findMany({
