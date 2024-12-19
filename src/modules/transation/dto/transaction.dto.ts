@@ -10,7 +10,7 @@ export class CreateTransactionDto {
   @ApiProperty({ description: 'Category tag for transaction', example: 'food' })
   @IsString()
   @IsNotEmpty()
-  categoryTag: string;
+  categoryId: string;
 
   @ApiProperty({ description: 'Remark', example: 'Dinner with family' })
   @IsString()

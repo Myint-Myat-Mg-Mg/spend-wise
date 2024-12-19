@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './modules/auth/auth.module';
 import { WalletModule } from './modules/wallet/wallet.module';
+import { CategoryModule } from './modules/category/category.module';
 import { WalletController } from './modules/wallet/wallet.controller';
 import { WalletService } from './modules/wallet/wallet.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -43,6 +44,7 @@ import * as Joi from 'joi';
   AuthModule,
   UserModule,
   WalletModule, 
+  CategoryModule,
   PrismaModule, 
   EmailModule, 
   OtpModule,

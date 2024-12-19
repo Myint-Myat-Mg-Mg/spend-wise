@@ -19,4 +19,9 @@ export class TransferTransactionDto {
   @IsString()
   @IsNotEmpty()
   remark: string;
+
+  @ApiProperty({ description: 'Description for the transaction', example: 'Transfer to savings after to buy something need' })
+  @IsString()
+  @IsNotEmpty()
+  description?: string;
 }

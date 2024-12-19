@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, UploadedFile, UseInterceptors, UseGuards }
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiParam, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from "./dto/transaction.dto";
+import { TransferTransactionDto } from "./dto/transfer_transaction.dto";
 import { UpdateTransactionDto } from "./dto/updatetransaction.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { JwtStrategy } from "../auth/jwt.strategy";
@@ -33,8 +34,14 @@ export class TransactionController {
             ...createTransactionDto,
             attachmentImage: attachmentImage ? `/uploads/transaction-images/${attachmentImage.filename}` : undefined,
         };
-        
+
         return this.transactionService.createTransaction(userId, createTransactionDto);
+    }
+
+    @Post('transfer')
+    async transferTransaction(@Request() req: any, @Body() data: TransferTransactionDto) {
+        const userId = req.user.id; // Adjust based on your authentication logic
+        return this.transactionService.transferTransaction(userId, data);
     }
 }
 
