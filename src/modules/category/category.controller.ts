@@ -32,9 +32,16 @@ export class CategoryController {
   @UseInterceptors(FileInterceptor('icon', { dest: './uploads/category-icons'}))
   async createCategory(@Body() createCategoryDto: CreateCategoryDto, @UploadedFile() iconFile?: Express.Multer.File,) {
     const iconPath = iconFile ? `/uploads/category-icons/${iconFile.filename}` : createCategoryDto.icon;
+
+    const privateValue =
+    typeof createCategoryDto.private === 'string'
+      ? createCategoryDto.private === 'true'
+      : createCategoryDto.private;
+
     return this.categoryService.createCategory({
       ...createCategoryDto,
       icon: iconPath,
+      private: privateValue,
     });
   }
 
