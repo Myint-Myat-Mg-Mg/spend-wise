@@ -39,9 +39,22 @@ export class TransactionController {
     }
 
     @Post('transfer')
-    async transferTransaction(@Request() req: any, @Body() data: TransferTransactionDto) {
+    @ApiOperation({ summary: 'Transfer between accounts' })
+    @ApiConsumes('multipart/form-data') // Use JSON input format
+    @ApiBody({ description: 'Transfer transaction details', type: TransferTransactionDto })
+    @ApiResponse({ status: 201, description: 'Transfer completed successfully' })
+    @ApiResponse({ status: 409, description: 'Transfer failed.' })
+    @UseGuards(AuthGuard('jwt'))
+    @UseInterceptors(FileInterceptor('attachmentFile', { dest: './uploads/transfer-files' }))
+    async transferTransaction(@Request() req: any, @Body() data: TransferTransactionDto, @UploadedFile() attachmentFile?: Express.Multer.File, ) {
         const userId = req.user.id; // Adjust based on your authentication logic
-        return this.transactionService.transferTransaction(userId, data);
+        
+        const transferData = { 
+            ...data,
+            attachmentFile: attachmentFile ? `/uploads/transfer-files/${attachmentFile.filename}` : undefined,
+        };
+
+        return this.transactionService.transferTransaction(userId, transferData);
     }
 }
 

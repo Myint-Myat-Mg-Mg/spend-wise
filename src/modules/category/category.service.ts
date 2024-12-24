@@ -13,10 +13,22 @@ export class CategoryService {
 
   // Create a new category
   async createCategory(data: CreateCategoryDto) {
-    const { name, icon, private: isPrivate } = data;
+    const { name, icon } = data;
 
-    const privateValue = typeof isPrivate === 'string' ? isPrivate === 'true' : isPrivate;
-      
+    const predefinedCategories = [
+        'Shopping',
+        'Subscription',
+        'Food',
+        'Salary',
+        'Transportation',
+        'General Use',
+        'Loan',
+        'Borrow',
+        'Other',
+      ];
+
+      const privateValue = !predefinedCategories.includes(name);
+
     return this.prisma.category.create({
       data: {
         name,
@@ -34,12 +46,9 @@ export class CategoryService {
       throw new NotFoundException(`Category with ID '${categoryId}' not found.`);
     }
 
-    const uncategorized = await this.prisma.category.findFirst({ where: { name: 'Uncategorized', private: false } });
-    const fallbackCategoryId = uncategorized ? uncategorized.id : null;
-
     await this.prisma.transaction.updateMany({
       where: { categoryId },
-      data: { categoryId: fallbackCategoryId }, // Or handle these transactions differently
+      data: { categoryId: null }, // Unlink the transactions from the deleted category
     });
 
     return this.prisma.category.delete({ where: { id: categoryId } });

@@ -20,8 +20,11 @@ export class TransferTransactionDto {
   @IsNotEmpty()
   remark: string;
 
-  @ApiProperty({ description: 'Description for the transaction', example: 'Transfer to savings after to buy something need' })
+  @ApiProperty({ description: 'Description for the transaction', example: 'Transfer to savings after to buy something need', required: false  })
   @IsString()
   @IsNotEmpty()
   description?: string;
+
+  @ApiProperty({ description: 'Attachment file (optional)', type: 'string', format: 'binary', required: false })
+  attachmentFile?: string;
 }

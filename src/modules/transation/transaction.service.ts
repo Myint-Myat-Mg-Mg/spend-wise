@@ -101,11 +101,11 @@ export class TransactionService {
               userId,
               accountId: fromAccountId,
               categoryId: transferCategory.id,
-               remark: `Transfer Out: ${remark}`,
-               amount,
-               description,
-               attachmentImage: attachmentImagePath,
-               type: TransactionType.EXPENSE,
+              remark: `Transfer Out: ${remark}`,
+              amount,
+              description,
+              attachmentImage: attachmentImagePath,
+              type: TransactionType.EXPENSE,
              },
            });
             
@@ -142,6 +142,7 @@ export class TransactionService {
         amount,
         fromAccountId,
         toAccountId,
+        attachmentFile: attachmentImagePath,
         transferOutTransaction,
         transferInTransaction,
       };

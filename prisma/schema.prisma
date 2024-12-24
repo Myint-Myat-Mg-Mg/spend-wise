@@ -54,7 +54,7 @@ model Transaction {
   id              String          @id @default(uuid())
   userId          String
   accountId       String
-  categoryId      String          
+  categoryId      String?          
   remark          String
   amount          Int
   description     String?
@@ -63,7 +63,7 @@ model Transaction {
   createdAt       DateTime        @default(now())
   account         Account         @relation(fields: [accountId], references: [id])
   user            User            @relation(fields: [userId], references: [id])
-  category        Category        @relation(fields: [categoryId], references: [id])
+  category        Category?        @relation(fields: [categoryId], references: [id])
 }
 
 model Category {
