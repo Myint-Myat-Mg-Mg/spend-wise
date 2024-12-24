@@ -6,7 +6,7 @@ import { TransferTransactionDto } from "./dto/transfer_transaction.dto";
 import { UpdateTransactionDto } from "./dto/updatetransaction.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { JwtStrategy } from "../auth/jwt.strategy";
-import { Request } from "@nestjs/common";
+import { Request, Param } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
 @ApiTags('Transactions')
@@ -14,6 +14,26 @@ import { AuthGuard } from "@nestjs/passport";
 @Controller('transaction')
 export class TransactionController {
     constructor(private readonly transactionService: TransactionService){}
+
+    @Get()
+    @ApiOperation({ summary: 'Retrieve all transactions' })
+    @ApiResponse({ status: 200, description: 'All transactions retrieved successfully' })
+    @ApiResponse({ status: 404, description: 'No transactions found' })
+    @UseGuards(AuthGuard('jwt'))
+    async getAllTransactions(@Request() req: any) {
+        const userId = req.user.id;
+        return this.transactionService.getAllTransactions(userId);
+    }
+
+    @Get(':transactionId')
+    @ApiOperation({ summary: 'Retrieve a transaction by ID' })
+    @ApiResponse({ status: 200, description: 'Transaction retrieved successfully' })
+    @ApiResponse({ status: 404, description: 'Transaction not found' })
+    @UseGuards(AuthGuard('jwt'))
+    async getTraansactionById(@Request() req: any, @Param('transactionId') transactionId: string) {
+        const userId = req.user.Id;
+        return this.transactionService.getTransactionById(userId, transactionId);
+    }
 
     @Post()
     @ApiOperation({ summary: 'Create a new transaction (Income/Expense)' })

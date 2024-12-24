@@ -13,8 +13,42 @@ export class TransactionService {
         private readonly accountService: AccountService,
     ) {}
 
+    async getAllTransactions(userId: string) {
+        const transactions = await this.prisma.transaction.findMany({
+            where: { userId },
+            include: {
+                account: true, // Includes account details
+                category: true, // Includes category details
+            },
+            orderBy: { createdAt: 'desc' }, // Sort by most recent
+        });
+    
+        return transactions;
+    }
+
+    async getTransactionById(userId: string, transactionId: string) {
+        const transaction = await this.prisma.transaction.findFirst({
+            include: {
+                account: true,
+                category: true,
+            },
+        });
+
+        if(!transaction) {
+            throw new NotFoundException(`Transaction with ID ${transactionId} not found for user ID: ${userId}`)
+        }
+
+        return transaction;
+    }
+
     async createTransaction(userId: string, data: CreateTransactionDto, attachmentImageFile?: Express.Multer.File){
         const { accountId, type, amount, categoryId, remark, description } = data;
+
+        const parsedAmount = Number(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            throw new BadRequestException('Invalid amount: must be a positive number.');
+        }
+
         const account = await this.prisma.account.findFirst({
             where: { id: accountId, userId },
         });
@@ -33,32 +67,33 @@ export class TransactionService {
             throw new BadRequestException('Insufficient balance for this transaction.');
         }
 
-        const attachmentImagePath = attachmentImageFile
+        const attachmentImagePath = attachmentImageFile?.filename
             ? `/uploads/transaction-images/${attachmentImageFile.filename}`
             : null;
 
-        const transaction = await this.prisma.transaction.create({
-            data: {
-                userId,
-                accountId,
-                categoryId,
-                remark,
-                amount,
-                description,
-                attachmentImage: attachmentImagePath,
-                type,
-            },
-        });
-
         const updatedBalance = type === TransactionType.INCOME
-        ? account.balance + amount
-        : account.balance - amount;
+        ? account.balance + parsedAmount
+        : account.balance - parsedAmount;
 
-        await this.prisma.account.update({
-         where: { id: accountId },
-            data: { balance: updatedBalance },
-        });
-
+        const [transaction] = await this.prisma.$transaction([
+            this.prisma.transaction.create({
+                data: {
+                    userId,
+                    accountId,
+                    categoryId,
+                    remark,
+                    amount: parsedAmount,
+                    description,
+                    attachmentImage: attachmentImagePath,
+                    type,
+                },
+            }),
+            this.prisma.account.update({
+                where: { id: accountId },
+                data: { balance: updatedBalance },
+            }),
+        ]);
+    
         return transaction;
     }
 
