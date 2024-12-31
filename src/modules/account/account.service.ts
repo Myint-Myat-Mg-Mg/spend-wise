@@ -98,7 +98,9 @@ export class AccountService {
       async getUserAccount(userId: string, accountId: string) {
         const account = await this.prisma.account.findFirst({
           where: { id: accountId, userId },
-          include: { transaction: true },
+          include: { transaction: {
+            include: { category: true },
+          } },
         });
     
         if (!account) {
