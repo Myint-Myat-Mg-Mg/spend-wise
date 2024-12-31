@@ -60,6 +60,7 @@ model Transaction {
   description     String?
   attachmentImage String?
   type            TransactionType
+  transferGroupId String?
   createdAt       DateTime        @default(now())
   account         Account         @relation(fields: [accountId], references: [id])
   user            User            @relation(fields: [userId], references: [id])
@@ -108,4 +109,5 @@ enum AccountSubType {
 enum TransactionType {
   INCOME
   EXPENSE
+  TRANSFER
 }

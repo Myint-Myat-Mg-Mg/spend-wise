@@ -5,6 +5,7 @@ import { Transaction, TransactionType } from "@prisma/client";
 import { UpdateTransactionDto } from './dto/updatetransaction.dto';
 import { AccountService } from "../account/account.service";
 import { TransferTransactionDto } from "./dto/transfer_transaction.dto";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class TransactionService {
@@ -124,6 +125,9 @@ export class TransactionService {
         if(!destinationAccount) {
             throw new NotFoundException(`Destination account with ID ${toAccountId} not found.`);
         }
+
+        // Generate a unique transfer group ID
+        const transferGroupId = uuidv4();
         
           // Handle optional attachment image
         const attachmentImagePath = attachmentImageFile
@@ -138,7 +142,8 @@ export class TransactionService {
               amount: transferAmount,
               description,
               attachmentImage: attachmentImagePath,
-              type: TransactionType.EXPENSE,
+              type: TransactionType.TRANSFER,
+              transferGroupId,
              },
            });
             
@@ -158,7 +163,8 @@ export class TransactionService {
             amount: transferAmount,
             description,
             attachmentImage: attachmentImagePath,
-            type: TransactionType.INCOME,
+            type: TransactionType.TRANSFER,
+            transferGroupId,
         },
         });
             
@@ -172,6 +178,7 @@ export class TransactionService {
       return {
         message: 'Transfer successful',
         amount: transferAmount,
+        transferGroupId,
         fromAccountId,
         toAccountId,
         attachmentFile: attachmentImagePath,
@@ -179,6 +186,33 @@ export class TransactionService {
         transferInTransaction,
       };
     }
+
+    async getTransferTransaction(userId: string, transferGroupId: string) {
+        const transactions = await this.prisma.transaction.findMany({
+          where: {
+            userId,
+            transferGroupId,
+          },
+          include: {
+            account: true, // Include account details for context
+          },
+        });
+      
+        if (transactions.length === 0) {
+          throw new NotFoundException(`No transactions found for transfer group ID: ${transferGroupId}`);
+        }
+      
+        const transferOutTransaction = transactions.find(tx => tx.remark.startsWith('Transfer Out'));
+        const transferInTransaction = transactions.find(tx => tx.remark.startsWith('Transfer In'));
+      
+        return {
+          message: 'Transfer transaction details retrieved successfully.',
+          transferGroupId,
+          transferOutTransaction,
+          transferInTransaction,
+        };
+      }
+
 }
     // async findAll(userId: string): Promise<Transaction[]> {
     //     return this.prisma.transaction.findMany({

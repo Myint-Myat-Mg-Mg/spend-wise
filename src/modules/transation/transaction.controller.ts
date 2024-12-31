@@ -58,6 +58,19 @@ export class TransactionController {
         return this.transactionService.createTransaction(userId, createTransactionDto);
     }
 
+    @Get('transfer/:transferGroupId')
+    @ApiOperation({ summary: 'Retrieve transfer transaction details by group ID' })
+    @ApiResponse({ status: 200, description: 'Transfer transaction details retrieved successfully' })
+    @ApiResponse({ status: 404, description: 'Transfer transaction not found' })
+    @UseGuards(AuthGuard('jwt'))
+    async getTransferTransaction(
+        @Request() req: any,
+        @Param('transferGroupId') transferGroupId: string
+    ) {
+        const userId = req.user.id; // Extract the user ID from the request
+        return this.transactionService.getTransferTransaction(userId, transferGroupId);
+    }
+
     @Post('transfer')
     @ApiOperation({ summary: 'Transfer between accounts' })
     @ApiConsumes('multipart/form-data') // Use JSON input format
