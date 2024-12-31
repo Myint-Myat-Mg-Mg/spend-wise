@@ -8,7 +8,11 @@ export class CategoryService {
 
   // Get all categories
   async getCategories() {
-    return this.prisma.category.findMany();
+    return this.prisma.category.findMany({
+      orderBy: {
+        updatedAt: 'desc', // Sort by the `updatedAt` field in descending order
+      },
+    });
   }
 
   // Create a new category
