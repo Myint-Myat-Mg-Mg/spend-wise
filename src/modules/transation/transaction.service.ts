@@ -100,6 +100,12 @@ export class TransactionService {
     async transferTransaction(userId: string, data: TransferTransactionDto, attachmentImageFile?: Express.Multer.File) {
         const { fromAccountId, toAccountId, amount, remark, description } = data;
 
+        const transferAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
+
+        if (isNaN(transferAmount) || transferAmount <= 0) {
+            throw new BadRequestException('Invalid transfer amount.');
+        }
+
         const sourceAccount = await this.prisma.account.findFirst({
             where: { id: fromAccountId, userId },
         });
@@ -108,7 +114,7 @@ export class TransactionService {
             throw new NotFoundException(`Source account with ID ${fromAccountId} not found for user ID: ${userId}`);
         }
 
-        if(sourceAccount.balance < amount) {
+        if(sourceAccount.balance < transferAmount) {
             throw new BadRequestException('Insufficient balance for this transaction.');
         }
 
@@ -117,13 +123,6 @@ export class TransactionService {
         });
         if(!destinationAccount) {
             throw new NotFoundException(`Destination account with ID ${toAccountId} not found.`);
-        }
-
-        const transferCategory = await this.prisma.category.findFirst({
-            where: { name: 'Transfer', private: false },
-        });
-        if (!transferCategory) {
-            throw new NotFoundException(`Category "Transfer" not found.`);
         }
         
           // Handle optional attachment image
@@ -135,9 +134,8 @@ export class TransactionService {
             data: {
               userId,
               accountId: fromAccountId,
-              categoryId: transferCategory.id,
               remark: `Transfer Out: ${remark}`,
-              amount,
+              amount: transferAmount,
               description,
               attachmentImage: attachmentImagePath,
               type: TransactionType.EXPENSE,
@@ -145,7 +143,7 @@ export class TransactionService {
            });
             
               // Update source account balance
-        const updatedSourceBalance = sourceAccount.balance - amount;
+        const updatedSourceBalance = sourceAccount.balance - transferAmount;
         await this.prisma.account.update({
           where: { id: fromAccountId },
           data: { balance: updatedSourceBalance },
@@ -156,9 +154,8 @@ export class TransactionService {
         data: {
             userId,
             accountId: toAccountId,
-            categoryId: transferCategory.id,
             remark: `Transfer In: ${remark}`,
-            amount,
+            amount: transferAmount,
             description,
             attachmentImage: attachmentImagePath,
             type: TransactionType.INCOME,
@@ -166,7 +163,7 @@ export class TransactionService {
         });
             
               // Update destination account balance
-        const updatedDestinationBalance = destinationAccount.balance + amount;
+        const updatedDestinationBalance = destinationAccount.balance + transferAmount;
         await this.prisma.account.update({
            where: { id: toAccountId },
           data: { balance: updatedDestinationBalance },
@@ -174,7 +171,7 @@ export class TransactionService {
     
       return {
         message: 'Transfer successful',
-        amount,
+        amount: transferAmount,
         fromAccountId,
         toAccountId,
         attachmentFile: attachmentImagePath,
