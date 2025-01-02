@@ -14,7 +14,9 @@ export class TransactionService {
         private readonly accountService: AccountService,
     ) {}
 
-    async getAllTransactions(userId: string) {
+    async getAllTransactions(userId: string, page: number, limit: number) {
+        const offset = (page - 1) * limit;
+
         const transactions = await this.prisma.transaction.findMany({
             where: { userId },
             include: {
@@ -22,9 +24,20 @@ export class TransactionService {
                 category: true, // Includes category details
             },
             orderBy: { createdAt: 'desc' }, // Sort by most recent
+            skip: offset, // Skip transactions for previous pages
+            take: limit,  // Limit transactions per page
         });
     
-        return transactions;
+        const totalCount = await this.prisma.transaction.count({
+            where: { userId },
+        });
+    
+        return {
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+            totalCount,
+            transactions,
+        };
     }
 
     async getTransactionById(userId: string, transactionId: string) {

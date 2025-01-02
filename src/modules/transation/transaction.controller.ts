@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, UploadedFile, UseInterceptors, UseGuards } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiParam, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
+import { Controller, Get, Post, Body, UploadedFile, UseInterceptors, UseGuards, Query } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiParam, ApiQuery, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from "./dto/transaction.dto";
 import { TransferTransactionDto } from "./dto/transfer_transaction.dto";
@@ -17,12 +17,19 @@ export class TransactionController {
 
     @Get()
     @ApiOperation({ summary: 'Retrieve all transactions' })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of transactions per page (default: 10)' })
     @ApiResponse({ status: 200, description: 'All transactions retrieved successfully' })
     @ApiResponse({ status: 404, description: 'No transactions found' })
     @UseGuards(AuthGuard('jwt'))
-    async getAllTransactions(@Request() req: any) {
+    async getAllTransactions(@Request() req: any, @Query('page') page: number = 1, @Query('limit') limit: number = 10){
         const userId = req.user.id;
-        return this.transactionService.getAllTransactions(userId);
+
+        // Validate pagination parameters
+        const validatedPage = Math.max(1, page); // Ensure page is at least 1
+        const validatedLimit = Math.min(100, Math.max(1, limit)); // Ensure limit is between 1 and 100
+
+        return this.transactionService.getAllTransactions(userId, validatedPage, validatedLimit);
     }
 
     @Get(':transactionId')
@@ -70,7 +77,7 @@ export class TransactionController {
         const userId = req.user.id; // Extract the user ID from the request
         return this.transactionService.getTransferTransaction(userId, transferGroupId);
     }
-
+ 
     @Post('transfer')
     @ApiOperation({ summary: 'Transfer between accounts' })
     @ApiConsumes('multipart/form-data') // Use JSON input format
