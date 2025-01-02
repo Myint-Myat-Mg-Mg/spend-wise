@@ -55,7 +55,7 @@ export class UserService {
   }
 
   async getUserProfile(userId: string) {
-    return this.prisma.user.findUnique({
+    const userProfile = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -64,24 +64,47 @@ export class UserService {
         image: true,
         account: {
           select: {
-            id: true,
-            name: true,
             balance: true,
-            accountType: true,
-            accountSubType: true,
             transaction: {
               select: {
-                id: true,
                 type: true, // Income or Expense
                 amount: true,
-                description: true,
-                createdAt: true,
               },
             },
           },
         },
       },
     });
+
+    if (!userProfile) {
+      throw new NotFoundException(`User with ID ${userId} not found.`);
+    }
+
+    let totalBalance = 0;
+    let totalIncome = 0;
+    let totalExpenses = 0;
+
+    for (const account of userProfile.account) {
+      totalBalance += account.balance;
+
+      for (const transaction of account.transaction) {
+        if (transaction.type === 'INCOME') {
+          totalIncome += transaction.amount;
+        } else if (transaction.type === 'EXPENSE') {
+          totalExpenses += transaction.amount;
+        }
+      }
+    }
+
+    return {
+      id: userProfile.id,
+      name: userProfile.name,
+      email: userProfile.email,
+      image: userProfile.image,
+      totalBalance,
+      totalIncome,
+      totalExpenses,
+    }
   }
   
 }
