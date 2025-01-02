@@ -43,7 +43,7 @@ export class TransactionService {
         }
 
         const transactions = await this.prisma.transaction.findMany({
-            where: { userId },
+            where: filters,
             include: {
                 account: true, // Includes account details
                 category: true, // Includes category details
@@ -54,7 +54,7 @@ export class TransactionService {
         });
     
         const totalCount = await this.prisma.transaction.count({
-            where: { userId },
+            where: filters,
         });
     
         return {

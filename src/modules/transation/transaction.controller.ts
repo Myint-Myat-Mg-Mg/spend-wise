@@ -9,7 +9,7 @@ import { JwtStrategy } from "../auth/jwt.strategy";
 import { Request, Param } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
-enum TransactionFilterType {
+enum TransactionType {
     INCOME = 'INCOME',
     EXPENSE = 'EXPENSE',
     TRANSFER = 'TRANSFER',
@@ -36,7 +36,7 @@ export class TransactionController {
         name: 'filterBy',
         required: false,
         description: 'Filter transactions by type',
-        enum: TransactionFilterType, // Dropdown for filterBy
+        enum: TransactionType, // Dropdown for filterBy
       })
       @ApiQuery({
         name: 'sortBy',
@@ -51,7 +51,7 @@ export class TransactionController {
         @Request() req: any, 
         @Query('page') page: number = 1, 
         @Query('limit') limit: number = 10,
-        @Query('filterBy') filterBy?: TransactionFilterType,
+        @Query('filterBy') filterBy?: TransactionType,
         @Query('sortBy') sortBy?: TransactionSortType,
     ){
         const userId = req.user.id;
