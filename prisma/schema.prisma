@@ -111,3 +111,10 @@ enum TransactionType {
   EXPENSE
   TRANSFER
 }
+  
+enum TransactionSortType {
+  HIGHEST 
+  LOWEST
+  NEWEST
+  OLDEST
+}

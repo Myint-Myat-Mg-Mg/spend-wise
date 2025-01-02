@@ -9,6 +9,19 @@ import { JwtStrategy } from "../auth/jwt.strategy";
 import { Request, Param } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
+enum TransactionFilterType {
+    INCOME = 'INCOME',
+    EXPENSE = 'EXPENSE',
+    TRANSFER = 'TRANSFER',
+  }
+  
+  enum TransactionSortType {
+    HIGHEST = 'HIGHEST',
+    LOWEST = 'LOWEST',
+    NEWEST = 'NEWEST',
+    OLDEST = 'OLDEST',
+  }
+
 @ApiTags('Transactions')
 @ApiBearerAuth()
 @Controller('transaction')
@@ -19,17 +32,35 @@ export class TransactionController {
     @ApiOperation({ summary: 'Retrieve all transactions' })
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of transactions per page (default: 10)' })
+    @ApiQuery({
+        name: 'filterBy',
+        required: false,
+        description: 'Filter transactions by type',
+        enum: TransactionFilterType, // Dropdown for filterBy
+      })
+      @ApiQuery({
+        name: 'sortBy',
+        required: false,
+        description: 'Sort transactions by criteria',
+        enum: TransactionSortType, // Dropdown for sortBy
+      })
     @ApiResponse({ status: 200, description: 'All transactions retrieved successfully' })
     @ApiResponse({ status: 404, description: 'No transactions found' })
     @UseGuards(AuthGuard('jwt'))
-    async getAllTransactions(@Request() req: any, @Query('page') page: number = 1, @Query('limit') limit: number = 10){
+    async getAllTransactions(
+        @Request() req: any, 
+        @Query('page') page: number = 1, 
+        @Query('limit') limit: number = 10,
+        @Query('filterBy') filterBy?: TransactionFilterType,
+        @Query('sortBy') sortBy?: TransactionSortType,
+    ){
         const userId = req.user.id;
 
         // Validate pagination parameters
         const validatedPage = Math.max(1, page); // Ensure page is at least 1
         const validatedLimit = Math.min(100, Math.max(1, limit)); // Ensure limit is between 1 and 100
 
-        return this.transactionService.getAllTransactions(userId, validatedPage, validatedLimit);
+        return this.transactionService.getAllTransactions(userId, validatedPage, validatedLimit, filterBy, sortBy);
     }
 
     @Get(':transactionId')

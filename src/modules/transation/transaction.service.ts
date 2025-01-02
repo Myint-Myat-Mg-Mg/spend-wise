@@ -14,8 +14,33 @@ export class TransactionService {
         private readonly accountService: AccountService,
     ) {}
 
-    async getAllTransactions(userId: string, page: number, limit: number) {
+    async getAllTransactions(userId: string, page: number, limit: number, filterBy?: 'INCOME' | 'EXPENSE' | 'TRANSFER',
+        sortBy?: 'HIGHEST' | 'LOWEST' | 'NEWEST' | 'OLDEST') {
         const offset = (page - 1) * limit;
+
+        const filters: any = { userId };
+        if (filterBy) {
+            filters.type = filterBy;
+        }
+
+        // Determine sorting logic
+        let orderBy: any = { createdAt: 'desc' }; // Default to newest
+        if (sortBy) {
+            switch (sortBy) {
+                case 'HIGHEST':
+                    orderBy = { amount: 'desc' };
+                    break;
+                case 'LOWEST':
+                    orderBy = { amount: 'asc' };
+                    break;
+                case 'NEWEST':
+                    orderBy = { createdAt: 'desc' };
+                    break;
+                case 'OLDEST':
+                    orderBy = { createdAt: 'asc' };
+                    break;
+            }
+        }
 
         const transactions = await this.prisma.transaction.findMany({
             where: { userId },
@@ -23,7 +48,7 @@ export class TransactionService {
                 account: true, // Includes account details
                 category: true, // Includes category details
             },
-            orderBy: { createdAt: 'desc' }, // Sort by most recent
+            orderBy, // Sort by most recent
             skip: offset, // Skip transactions for previous pages
             take: limit,  // Limit transactions per page
         });
