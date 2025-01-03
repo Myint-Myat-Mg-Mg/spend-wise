@@ -20,6 +20,7 @@ model User {
   account      Account[]
   otps         Otp[]
   transactions Transaction[]
+  budgets      Budget[]
 }
 
 model Otp {
@@ -75,6 +76,7 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   transactions Transaction[]
+  budgets   Budget[]
 }
 
 enum OtpPurpose {
@@ -104,6 +106,19 @@ enum AccountSubType {
   WAVEPAY
   OKDOLLAR
   OTHER_PAY
+}
+
+model Budget {
+  id           String     @id @default(uuid())
+  amount       Int
+  categoryId   String
+  notification Boolean
+  percentage   Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  category     Category  @relation(fields: [categoryId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
 }
 
 enum TransactionType {

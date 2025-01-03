@@ -15,6 +15,7 @@ import { OtpModule } from './otp/otp.module';
 import { TransactionModule } from './modules/transation/transaction.module';
 import { AccountModule } from './modules/account/account.module';
 import * as Joi from 'joi';
+import { BudgetModule } from './modules/budget/budget.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import * as Joi from 'joi';
   OtpModule,
   TransactionModule,
   AccountModule,
+  BudgetModule,
 ],
   controllers: [AppController],
   providers: [AppService],

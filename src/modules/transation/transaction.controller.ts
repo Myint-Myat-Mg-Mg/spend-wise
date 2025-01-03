@@ -44,6 +44,18 @@ export class TransactionController {
         description: 'Sort transactions by criteria',
         enum: TransactionSortType, // Dropdown for sortBy
       })
+      @ApiQuery({
+        name: 'fromDate',
+        required: false,
+        type: String,
+        description: 'Start of the date range (format: YYYY-MM-DD)',
+    })
+    @ApiQuery({
+        name: 'toDate',
+        required: false,
+        type: String,
+        description: 'End of the date range (format: YYYY-MM-DD)',
+    })
     @ApiResponse({ status: 200, description: 'All transactions retrieved successfully' })
     @ApiResponse({ status: 404, description: 'No transactions found' })
     @UseGuards(AuthGuard('jwt'))
@@ -53,6 +65,8 @@ export class TransactionController {
         @Query('limit') limit: number = 10,
         @Query('filterBy') filterBy?: TransactionType,
         @Query('sortBy') sortBy?: TransactionSortType,
+        @Query('fromDate') fromDate?: string,
+        @Query('toDate') toDate?: string,
     ){
         const userId = req.user.id;
 
@@ -60,7 +74,7 @@ export class TransactionController {
         const validatedPage = Math.max(1, page); // Ensure page is at least 1
         const validatedLimit = Math.min(100, Math.max(1, limit)); // Ensure limit is between 1 and 100
 
-        return this.transactionService.getAllTransactions(userId, validatedPage, validatedLimit, filterBy, sortBy);
+        return this.transactionService.getAllTransactions(userId, validatedPage, validatedLimit, filterBy, sortBy, fromDate, toDate);
     }
 
     @Get(':transactionId')

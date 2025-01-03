@@ -15,12 +15,19 @@ export class TransactionService {
     ) {}
 
     async getAllTransactions(userId: string, page: number, limit: number, filterBy?: 'INCOME' | 'EXPENSE' | 'TRANSFER',
-        sortBy?: 'HIGHEST' | 'LOWEST' | 'NEWEST' | 'OLDEST') {
+        sortBy?: 'HIGHEST' | 'LOWEST' | 'NEWEST' | 'OLDEST', fromDate?: string, toDate?: string) {
         const offset = (page - 1) * limit;
 
         const filters: any = { userId };
         if (filterBy) {
             filters.type = filterBy;
+        }
+
+        if (fromDate && toDate) {
+            filters.createdAt = {
+                gte: new Date(fromDate),
+                lte: new Date(toDate),
+            };
         }
 
         // Determine sorting logic
