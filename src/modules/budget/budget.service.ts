@@ -73,11 +73,51 @@ export class BudgetService {
   // }
 
   async getAllBudgets(userId: string) {
-    return this.prisma.budget.findMany({
+    const budgets = await this.prisma.budget.findMany({
       where: { userId },
+      include: { category: true }, // Include category details
       orderBy: { createdAt: 'desc' }, // Sort by most recent
     });
-  }
+  
+    const budgetsWithDetails = await Promise.all(
+      budgets.map(async (budget) => {
+        // Calculate total expenses for the budget category
+        const totalExpense = await this.prisma.transaction.aggregate({
+          where: {
+            userId,
+            categoryId: budget.categoryId,
+            type: 'EXPENSE',
+          },
+          _sum: { amount: true },
+        });
+  
+        const spentAmount = totalExpense._sum.amount || 0;
+  
+        // Prepare notification details
+        let notification = null;
+        if (budget.notification && budget.percentage) {
+          const threshold = (budget.percentage / 100) * budget.amount;
+  
+          if (spentAmount >= threshold) {
+            notification = {
+              message: `You have spent ${spentAmount} out of your budget ${budget.amount} for category ${budget.category.name}.`,
+              spentAmount,
+              threshold,
+            };
+          }
+        }
+  
+        return {
+          ...budget,
+          spentAmount,
+          remainingAmount: budget.amount - spentAmount,
+          notification,
+        };
+      })
+    );
+  
+    return budgetsWithDetails;
+  }  
 
   async editBudget(budgetId: string, data: { notification?: boolean; percentage?: number }) {
     return this.prisma.budget.update({

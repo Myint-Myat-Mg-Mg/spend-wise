@@ -27,7 +27,7 @@ export class CategoryController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ description: 'Details of the category to create', type: CreateCategoryDto })
   @ApiResponse({ status: 201, description: 'Category created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid category name or input' })
+  @ApiResponse({ status: 400, description: 'Category name must be unique' })
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(FileInterceptor('icon', { dest: './uploads/category-icons'}))
   async createCategory(@Body() createCategoryDto: CreateCategoryDto, @UploadedFile() iconFile?: Express.Multer.File,) {

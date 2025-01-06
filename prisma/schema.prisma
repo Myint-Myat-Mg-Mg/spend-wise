@@ -70,7 +70,7 @@ model Transaction {
 
 model Category {
   id        String   @id @default(uuid())
-  name      String   
+  name      String   @unique
   icon      String?  // Optional icon URL
   private   Boolean  @default(false) // Whether the category is private
   createdAt DateTime @default(now())

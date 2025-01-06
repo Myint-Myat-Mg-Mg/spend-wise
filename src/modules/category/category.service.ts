@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create_category.dto';
 
@@ -33,13 +33,20 @@ export class CategoryService {
 
       const privateValue = !predefinedCategories.includes(name);
 
-    return this.prisma.category.create({
-      data: {
-        name,
-        icon: icon || null, // Default to null if no icon is provided
-        private: privateValue, // Ensure this is a boolean
-      },
-    });
+      try {
+        return await this.prisma.category.create({
+          data: {
+            name,
+            icon: icon || null, // Default to null if no icon is provided
+            private: privateValue, // Ensure this is a boolean
+          },
+        });
+      } catch (error) {
+        if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
+          throw new ConflictException('Category name must be unique.');
+        }
+        throw error;
+      }
   }
   
   // Delete a category
