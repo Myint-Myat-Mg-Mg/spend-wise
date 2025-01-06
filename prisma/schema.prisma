@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
   id           String        @id @default(uuid())
   name         String
@@ -18,20 +17,20 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @default(now()) @updatedAt
   account      Account[]
+  budgets      Budget[]
   otps         Otp[]
   transactions Transaction[]
-  budgets      Budget[]
 }
 
 model Otp {
   id        String     @id @default(uuid())
   code      String
   userId    String?
-  user      User?      @relation(fields: [userId], references: [id])
   email     String
   purpose   OtpPurpose
   expiresAt DateTime
   createdAt DateTime   @default(now())
+  user      User?      @relation(fields: [userId], references: [id])
 
   @@index([code, purpose])
 }
@@ -55,28 +54,41 @@ model Transaction {
   id              String          @id @default(uuid())
   userId          String
   accountId       String
-  categoryId      String?          
   remark          String
   amount          Int
   description     String?
   attachmentImage String?
   type            TransactionType
-  transferGroupId String?
   createdAt       DateTime        @default(now())
+  categoryId      String?
+  transferGroupId String?
   account         Account         @relation(fields: [accountId], references: [id])
+  category        Category?       @relation(fields: [categoryId], references: [id])
   user            User            @relation(fields: [userId], references: [id])
-  category        Category?        @relation(fields: [categoryId], references: [id])
 }
 
 model Category {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  icon      String?  // Optional icon URL
-  private   Boolean  @default(false) // Whether the category is private
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(uuid())
+  name         String        @unique
+  icon         String?
+  private      Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  budgets      Budget[]
   transactions Transaction[]
-  budgets   Budget[]
+}
+
+model Budget {
+  id           String   @id @default(uuid())
+  amount       Int
+  categoryId   String  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  notification Boolean
+  percentage   Int?
+  userId       String
+  category     Category @relation(fields: [categoryId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
 }
 
 enum OtpPurpose {
@@ -108,27 +120,14 @@ enum AccountSubType {
   OTHER_PAY
 }
 
-model Budget {
-  id           String     @id @default(uuid())
-  amount       Int
-  categoryId   String
-  notification Boolean
-  percentage   Int?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  category     Category  @relation(fields: [categoryId], references: [id])
-  userId       String
-  user         User       @relation(fields: [userId], references: [id])
-}
-
 enum TransactionType {
   INCOME
   EXPENSE
   TRANSFER
 }
-  
+
 enum TransactionSortType {
-  HIGHEST 
+  HIGHEST
   LOWEST
   NEWEST
   OLDEST

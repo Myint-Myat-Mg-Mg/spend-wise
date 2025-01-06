@@ -65,10 +65,6 @@ export class AccountService {
           include: { transaction: true },
         });
 
-        if(!accounts.length) {
-          throw new NotFoundException(`No accounts found for user with ID ${userId}.`);
-        }
-
         return accounts.map((account) => {
           const totalIncome = account.transaction
             .filter((txn) => txn.type === 'INCOME')

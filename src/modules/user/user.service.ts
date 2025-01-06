@@ -41,11 +41,19 @@ export class UserService {
   }
 
   async updateUserProfile(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+    // Check if password is being updated
+    if (data.password && typeof data.password === 'string') {
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(data.password, 10);
+        data.password = hashedPassword;
+    }
+
     return this.prisma.user.update({
-      where: { id },
-      data,
+        where: { id },
+        data,
     });
   }
+
 
   async delete(id: string): Promise<void> {
     await this.findById(id);
