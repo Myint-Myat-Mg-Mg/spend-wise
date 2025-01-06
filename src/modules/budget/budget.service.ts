@@ -44,18 +44,20 @@ export class BudgetService {
     const spentAmount = totalExpense._sum.amount || 0;
 
     // Prepare notification details
-  let notification = null;
-  if (budget.notification && budget.percentage) {
+    const isNotificationEnabled = budget.notification ?? false; // Default to false if null or undefined
+  const notification: { isEnabled: boolean; message?: string; spentAmount?: number; threshold?: number } = {
+    isEnabled: isNotificationEnabled,
+  };
+
+  if (isNotificationEnabled && budget.percentage) {
     const threshold = (budget.percentage / 100) * budget.amount;
 
     if (spentAmount >= threshold) {
-      notification = {
-        message: `You have spent ${spentAmount} out of your budget ${budget.amount} for category ${budget.category.name}.`,
-        spentAmount,
-        threshold,
+      notification.message = `You have spent ${spentAmount} out of your budget ${budget.amount} for category ${budget.category.name}.`;
+      notification.spentAmount = spentAmount;
+      notification.threshold = threshold;
       };
     }
-  }
 
     return {
       budget,
@@ -94,18 +96,21 @@ export class BudgetService {
         const spentAmount = totalExpense._sum.amount || 0;
   
         // Prepare notification details
-        let notification = null;
-        if (budget.notification && budget.percentage) {
-          const threshold = (budget.percentage / 100) * budget.amount;
+        const isNotificationEnabled = budget.notification ?? false; // Default to false if null or undefined
+      const notification: { isEnabled: boolean; message?: string; spentAmount?: number; threshold?: number } = {
+        isEnabled: isNotificationEnabled,
+      };
+
+      if (isNotificationEnabled && budget.percentage) {
+        const threshold = (budget.percentage / 100) * budget.amount;
   
           if (spentAmount >= threshold) {
-            notification = {
-              message: `You have spent ${spentAmount} out of your budget ${budget.amount} for category ${budget.category.name}.`,
-              spentAmount,
-              threshold,
-            };
-          }
+            notification.message = `You have spent ${spentAmount} out of your budget ${budget.amount} for category ${budget.category.name}.`;
+          notification.spentAmount = spentAmount;
+          notification.threshold = threshold;
+          };
         }
+        
   
         return {
           ...budget,
