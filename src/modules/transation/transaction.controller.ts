@@ -141,6 +141,17 @@ export class TransactionController {
 
         return this.transactionService.transferTransaction(userId, transferData);
     }
+
+    @Get('expense-usage')
+    @ApiOperation({ summary: 'Track transfer expense usage by time frame' })
+    @ApiQuery({ name: 'timeFrame', enum: ['weekly', 'monthly', 'yearly'], required: true })
+    @ApiResponse({ status: 200, description: 'Expense usage retrieved successfully.' })
+    @UseGuards(AuthGuard('jwt'))
+    async getExpenseUsage(@Request() req, @Query('timeFrame') timeFrame: 'weekly' | 'monthly' | 'yearly') {
+      const userId = req.user.id;
+      return this.transactionService.trackExpenseUsage(userId, timeFrame);
+    }
+
 }
 
     

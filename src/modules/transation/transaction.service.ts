@@ -258,6 +258,76 @@ export class TransactionService {
         };
       }
 
+      async trackExpenseUsage(
+        userId: string,
+        timeFrame: 'weekly' | 'monthly' | 'yearly',
+      ): Promise<{ timeFrame: string; totalExpense: number; breakdown: { date: string; total: number }[] }> {
+        const currentDate = new Date();
+        let startDate: Date;
+        let groupBy: 'day' | 'month' | 'year';
+      
+        // Determine the start date and grouping based on the time frame
+        if (timeFrame === 'weekly') {
+          const firstDayOfWeek = currentDate.getDate() - currentDate.getDay();
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), firstDayOfWeek);
+          groupBy = 'day';
+        } else if (timeFrame === 'monthly') {
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+          groupBy = 'day';
+        } else if (timeFrame === 'yearly') {
+          startDate = new Date(currentDate.getFullYear(), 0, 1);
+          groupBy = 'month';
+        } else {
+          throw new Error('Invalid time frame. Choose from "weekly", "monthly", or "yearly".');
+        }
+      
+        // Query transactions within the time frame
+        const transactions = await this.prisma.transaction.findMany({
+          where: {
+            userId,
+            type: 'EXPENSE',
+            createdAt: { gte: startDate, lte: currentDate },
+          },
+          select: {
+            amount: true,
+            createdAt: true,
+          },
+        });
+      
+        // Aggregate expenses by the specified grouping
+        const breakdown = transactions.reduce((acc, transaction) => {
+          const dateKey =
+            groupBy === 'day'
+              ? transaction.createdAt.toISOString().split('T')[0] // YYYY-MM-DD
+              : groupBy === 'month'
+              ? `${transaction.createdAt.getFullYear()}-${String(transaction.createdAt.getMonth() + 1).padStart(2, '0')}` // YYYY-MM
+              : String(transaction.createdAt.getFullYear()); // YYYY
+      
+          if (!acc[dateKey]) {
+            acc[dateKey] = 0;
+          }
+          acc[dateKey] += transaction.amount;
+      
+          return acc;
+        }, {} as Record<string, number>);
+      
+        // Format the breakdown
+        const formattedBreakdown = Object.entries(breakdown).map(([date, total]) => ({
+          date,
+          total,
+        }));
+      
+        // Calculate the total expense
+        const totalExpense = formattedBreakdown.reduce((sum, item) => sum + item.total, 0);
+      
+        return {
+          timeFrame,
+          totalExpense,
+          breakdown: formattedBreakdown,
+        };
+      }
+      
+
 }
     // async findAll(userId: string): Promise<Transaction[]> {
     //     return this.prisma.transaction.findMany({
