@@ -270,10 +270,12 @@ export class TransactionService {
           startDate.setDate(currentDate.getDate() - 6); // Last 7 days including today
           groupBy = 'day';
         } else if (timeFrame === 'monthly') {
-          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1); // First day of the month
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+          endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
           groupBy = 'day';
         } else if (timeFrame === 'yearly') {
-          startDate = new Date(currentDate.getFullYear(), 0, 1); // First day of the year
+          startDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth() + 1, 0); // First day of 12 months back
+          endDate = new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), 1); // Ending date
           groupBy = 'month';
         } else {
           throw new Error('Invalid time frame. Choose from "weekly", "monthly", or "yearly".');
@@ -296,47 +298,47 @@ export class TransactionService {
         const dateTotals = new Map<string, number>();
       
         // Populate the map with zeros for all dates in the range
-        let dateCursor = new Date(startDate);
-        while (dateCursor <= endDate) {
-          const dateKey =
-            groupBy === 'day'
-              ? dateCursor.toISOString().split('T')[0] // YYYY-MM-DD
-              : `${dateCursor.getFullYear()}-${String(dateCursor.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
-          dateTotals.set(dateKey, 0);
-      
-          // Increment the cursor
-          if (groupBy === 'day') {
-            dateCursor.setDate(dateCursor.getDate() + 1);
-          } else {
-            dateCursor.setMonth(dateCursor.getMonth() + 1);
+        if (timeFrame === 'weekly' || timeFrame === 'monthly') {
+            let dateCursor = new Date(startDate);
+            while (dateCursor <= endDate) {
+              const dateKey = dateCursor.toISOString().split('T')[0]; // YYYY-MM-DD
+              dateTotals.set(dateKey, 0);
+              dateCursor.setDate(dateCursor.getDate() + 1);
+            }
+          } else if (timeFrame === 'yearly') {
+            for (let i = 0; i < 12; i++) {
+              const year = startDate.getFullYear();
+              const month = (startDate.getMonth() + 1).toString().padStart(2, '0'); // YYYY-MM
+              const dateKey = `${year}-${month}`;
+              dateTotals.set(dateKey, 0);
+              startDate.setMonth(startDate.getMonth() + 1);
+            }
           }
-        }
-      
-        // Aggregate transaction amounts
-        transactions.forEach((transaction) => {
-          const dateKey =
-            groupBy === 'day'
-              ? transaction.createdAt.toISOString().split('T')[0] // YYYY-MM-DD
-              : `${transaction.createdAt.getFullYear()}-${String(transaction.createdAt.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
-          if (dateTotals.has(dateKey)) {
-            dateTotals.set(dateKey, dateTotals.get(dateKey)! + transaction.amount);
-          }
-        });
-      
-        // Convert the map to an array for breakdown
-        const breakdown = Array.from(dateTotals.entries()).map(([date, total]) => ({
-          date,
-          total,
-        }));
-      
-        // Calculate the total expense
-        const totalExpense = breakdown.reduce((sum, item) => sum + item.total, 0);
         
-
-        return {
-          timeFrame,
-          totalExpense,
-          breakdown,
-        };  
+          // Aggregate transaction amounts
+          transactions.forEach((transaction) => {
+            const dateKey =
+              groupBy === 'day'
+                ? transaction.createdAt.toISOString().split('T')[0] // YYYY-MM-DD
+                : `${transaction.createdAt.getFullYear()}-${String(transaction.createdAt.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+            if (dateTotals.has(dateKey)) {
+              dateTotals.set(dateKey, dateTotals.get(dateKey)! + transaction.amount);
+            }
+          });
+        
+          // Convert the map to an array for breakdown
+          const breakdown = Array.from(dateTotals.entries()).map(([date, total]) => ({
+            date,
+            total,
+          }));
+        
+          // Calculate the total expense
+          const totalExpense = breakdown.reduce((sum, item) => sum + item.total, 0);
+        
+          return {
+            timeFrame,
+            totalExpense,
+            breakdown,
+          };  
     }
 }
