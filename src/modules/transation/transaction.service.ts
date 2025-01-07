@@ -256,26 +256,24 @@ export class TransactionService {
           transferOutTransaction,
           transferInTransaction,
         };
-      }
+    }      
 
-      async trackExpenseUsage(
-        userId: string,
-        timeFrame: 'weekly' | 'monthly' | 'yearly',
-      ): Promise<{ timeFrame: string; totalExpense: number; breakdown: { date: string; total: number }[] }> {
+    async expenseUsage(userId: string, timeFrame: 'weekly' | 'monthly' | 'yearly', ): Promise<{ timeFrame: string; totalExpense: number; breakdown: { date: string; total: number }[] }> {
         const currentDate = new Date();
         let startDate: Date;
-        let groupBy: 'day' | 'month' | 'year';
+        let endDate = currentDate;
+        let groupBy: 'day' | 'month';
       
         // Determine the start date and grouping based on the time frame
         if (timeFrame === 'weekly') {
-          const firstDayOfWeek = currentDate.getDate() - currentDate.getDay();
-          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), firstDayOfWeek);
+          startDate = new Date(currentDate);
+          startDate.setDate(currentDate.getDate() - 6); // Last 7 days including today
           groupBy = 'day';
         } else if (timeFrame === 'monthly') {
-          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1); // First day of the month
           groupBy = 'day';
         } else if (timeFrame === 'yearly') {
-          startDate = new Date(currentDate.getFullYear(), 0, 1);
+          startDate = new Date(currentDate.getFullYear(), 0, 1); // First day of the year
           groupBy = 'month';
         } else {
           throw new Error('Invalid time frame. Choose from "weekly", "monthly", or "yearly".');
@@ -286,7 +284,7 @@ export class TransactionService {
           where: {
             userId,
             type: 'EXPENSE',
-            createdAt: { gte: startDate, lte: currentDate },
+            createdAt: { gte: startDate, lte: endDate },
           },
           select: {
             amount: true,
@@ -294,98 +292,51 @@ export class TransactionService {
           },
         });
       
-        // Aggregate expenses by the specified grouping
-        const breakdown = transactions.reduce((acc, transaction) => {
+        // Initialize a map to store aggregated totals
+        const dateTotals = new Map<string, number>();
+      
+        // Populate the map with zeros for all dates in the range
+        let dateCursor = new Date(startDate);
+        while (dateCursor <= endDate) {
+          const dateKey =
+            groupBy === 'day'
+              ? dateCursor.toISOString().split('T')[0] // YYYY-MM-DD
+              : `${dateCursor.getFullYear()}-${String(dateCursor.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+          dateTotals.set(dateKey, 0);
+      
+          // Increment the cursor
+          if (groupBy === 'day') {
+            dateCursor.setDate(dateCursor.getDate() + 1);
+          } else {
+            dateCursor.setMonth(dateCursor.getMonth() + 1);
+          }
+        }
+      
+        // Aggregate transaction amounts
+        transactions.forEach((transaction) => {
           const dateKey =
             groupBy === 'day'
               ? transaction.createdAt.toISOString().split('T')[0] // YYYY-MM-DD
-              : groupBy === 'month'
-              ? `${transaction.createdAt.getFullYear()}-${String(transaction.createdAt.getMonth() + 1).padStart(2, '0')}` // YYYY-MM
-              : String(transaction.createdAt.getFullYear()); // YYYY
-      
-          if (!acc[dateKey]) {
-            acc[dateKey] = 0;
+              : `${transaction.createdAt.getFullYear()}-${String(transaction.createdAt.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+          if (dateTotals.has(dateKey)) {
+            dateTotals.set(dateKey, dateTotals.get(dateKey)! + transaction.amount);
           }
-          acc[dateKey] += transaction.amount;
+        });
       
-          return acc;
-        }, {} as Record<string, number>);
-      
-        // Format the breakdown
-        const formattedBreakdown = Object.entries(breakdown).map(([date, total]) => ({
+        // Convert the map to an array for breakdown
+        const breakdown = Array.from(dateTotals.entries()).map(([date, total]) => ({
           date,
           total,
         }));
       
         // Calculate the total expense
-        const totalExpense = formattedBreakdown.reduce((sum, item) => sum + item.total, 0);
-      
+        const totalExpense = breakdown.reduce((sum, item) => sum + item.total, 0);
+        
+
         return {
           timeFrame,
           totalExpense,
-          breakdown: formattedBreakdown,
-        };
-      }
-      
-
+          breakdown,
+        };  
+    }
 }
-    // async findAll(userId: string): Promise<Transaction[]> {
-    //     return this.prisma.transaction.findMany({
-    //         where: { userId },
-    //         include: {
-    //             account: true,
-    //         },
-    //     });
-    // }
-
-    // async addTransaction(body: any, file: Express.Multer.File, type: TransactionType) {
-    //     const { userId, accountId, amount, categoryTag, remark, description } = body;
-    
-
-    //     const parsedAmount = Number(amount);
-    // if (isNaN(parsedAmount)) {
-    //     throw new BadRequestException('Invalid amount provided. It must be a number.');
-    // }
-    //     // Validate account
-    //     const account = await this.prisma.account.findFirst({
-    //       where: { id: accountId, userId },
-    //     });
-    
-    //     if (!account) {
-    //       throw new NotFoundException(`Account not found for user ID: ${userId}`);
-    //     }
-    
-    //     // Validate expense balance
-    //     if (type === 'EXPENSE' && account.balance < parsedAmount) {
-    //       throw new BadRequestException('Insufficient balance for this transaction.');
-    //     }
-    
-    //     // Adjust balance
-    //     const newBalance = type === 'INCOME' 
-    //       ? account.balance + parsedAmount 
-    //       : account.balance - parsedAmount;
-    
-    //    // Update account balance
-    //     await this.prisma.account.update({
-    //       where: { id: accountId },
-    //       data: { balance: newBalance },
-    //     });
-    
-    //     // Save transact ion
-    //     const transaction = await this.prisma.transaction.create({
-    //       data: {
-    //         userId,
-    //         accountId,
-    //         type,
-    //         amount: parsedAmount,
-    //         categoryTag,
-    //         remark,
-    //         description,
-    //         attachmentImage: file?.path, // Save file path
-    //       },
-    //     });
-
-    //     return transaction;
-      
-    //  }
-//}

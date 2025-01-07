@@ -77,15 +77,7 @@ export class TransactionController {
         return this.transactionService.getAllTransactions(userId, validatedPage, validatedLimit, filterBy, sortBy, fromDate, toDate);
     }
 
-    @Get(':transactionId')
-    @ApiOperation({ summary: 'Retrieve a transaction by ID' })
-    @ApiResponse({ status: 200, description: 'Transaction retrieved successfully' })
-    @ApiResponse({ status: 404, description: 'Transaction not found' })
-    @UseGuards(AuthGuard('jwt'))
-    async getTraansactionById(@Request() req: any, @Param('transactionId') transactionId: string) {
-        const userId = req.user.Id;
-        return this.transactionService.getTransactionById(userId, transactionId);
-    }
+ 
 
     @Post()
     @ApiOperation({ summary: 'Create a new transaction (Income/Expense)' })
@@ -143,13 +135,25 @@ export class TransactionController {
     }
 
     @Get('expense-usage')
-    @ApiOperation({ summary: 'Track transfer expense usage by time frame' })
+    @ApiOperation({ summary: 'Track expense usage by time frame' })
     @ApiQuery({ name: 'timeFrame', enum: ['weekly', 'monthly', 'yearly'], required: true })
     @ApiResponse({ status: 200, description: 'Expense usage retrieved successfully.' })
     @UseGuards(AuthGuard('jwt'))
     async getExpenseUsage(@Request() req, @Query('timeFrame') timeFrame: 'weekly' | 'monthly' | 'yearly') {
-      const userId = req.user.id;
-      return this.transactionService.trackExpenseUsage(userId, timeFrame);
+        const userId = req.user.id;
+        
+        const result = await this.transactionService.expenseUsage(userId, timeFrame);
+        return result;
+    }
+
+    @Get(':transactionId')
+    @ApiOperation({ summary: 'Retrieve a transaction by ID' })
+    @ApiResponse({ status: 200, description: 'Transaction retrieved successfully' })
+    @ApiResponse({ status: 404, description: 'Transaction not found' })
+    @UseGuards(AuthGuard('jwt'))
+    async getTraansactionById(@Request() req: any, @Param('transactionId') transactionId: string) {
+        const userId = req.user.Id;
+        return this.transactionService.getTransactionById(userId, transactionId);
     }
 
 }
