@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UploadedFile, UseInterceptors, UseGuards, Query } from "@nestjs/common";
+import { Controller, Get, Post, Body, UploadedFile, UseInterceptors, UseGuards, Query, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiParam, ApiQuery, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from "./dto/transaction.dto";
@@ -6,8 +6,9 @@ import { TransferTransactionDto } from "./dto/transfer_transaction.dto";
 import { UpdateTransactionDto } from "./dto/updatetransaction.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { JwtStrategy } from "../auth/jwt.strategy";
-import { Request, Param } from "@nestjs/common";
+import { Request, Param, } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import { Response } from 'express';
 
 enum TransactionType {
     INCOME = 'INCOME',
@@ -145,6 +146,26 @@ export class TransactionController {
         const result = await this.transactionService.expenseUsage(userId, timeFrame);
         return result;
     }
+
+    @Get('export/monthly/:year/:month')
+    @ApiOperation({ summary: 'Export monthly transactions to Excel' })
+    @ApiResponse({ status: 200, description: 'Monthly transactions exported successfully.' })
+    @UseGuards(AuthGuard('jwt'))
+    @UseInterceptors(FileInterceptor('attachmentFile', { dest: './uploads/excel-exports' }))
+    async exportMonthly(
+      @Param('year') year: number,
+      @Param('month') month: number,
+      @Res() res: Response,
+      @Request() req,
+    ) {
+      const userId = req.user.id;
+      const buffer = await this.transactionService.exportMonthlyTransactionsToExcel(userId, month, year);
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=Monthly_Transactions_${year}-${month}.xlsx`);
+      res.send(buffer); // Send the Excel file to the client
+    }
+
 
     @Get(':transactionId')
     @ApiOperation({ summary: 'Retrieve a transaction by ID' })

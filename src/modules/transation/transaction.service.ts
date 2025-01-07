@@ -6,6 +6,7 @@ import { UpdateTransactionDto } from './dto/updatetransaction.dto';
 import { AccountService } from "../account/account.service";
 import { TransferTransactionDto } from "./dto/transfer_transaction.dto";
 import { v4 as uuidv4 } from "uuid";
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class TransactionService {
@@ -341,4 +342,78 @@ export class TransactionService {
             breakdown,
           };  
     }
+
+    async exportMonthlyTransactionsToExcel(userId: string, month: number, year: number): Promise<Buffer> {
+        const startDate = new Date(year, month - 1, 1); // Start of the month
+        const endDate = new Date(year, month, 0); // End of the month (30 or 31 days)
+      
+        // Fetch transactions for the month
+        const transactions = await this.prisma.transaction.findMany({
+          where: {
+            userId,
+            type: 'EXPENSE',
+            createdAt: { gte: startDate, lte: endDate },
+          },
+          select: {
+            amount: true,
+            createdAt: true,
+            description: true, // Add this if you need descriptions in the Excel
+          },
+        });
+      
+        // Initialize a map to store aggregated totals and transactions for each day
+        const dailyTransactions = new Map<string, { transactions: any[]; total: number }>();
+      
+        // Populate the map with zeros for all days in the month
+        for (let i = 1; i <= endDate.getDate(); i++) {
+          const dateKey = new Date(year, month - 1, i).toISOString().split('T')[0]; // YYYY-MM-DD
+          dailyTransactions.set(dateKey, { transactions: [], total: 0 });
+        }
+      
+        // Aggregate transaction amounts into daily totals
+        transactions.forEach((transaction) => {
+          const dateKey = transaction.createdAt.toISOString().split('T')[0]; // YYYY-MM-DD
+          if (dailyTransactions.has(dateKey)) {
+            const dayData = dailyTransactions.get(dateKey)!;
+            dayData.transactions.push(transaction); // Add transaction details
+            dayData.total += transaction.amount; // Add to the daily total
+          }
+        });
+      
+        // Create an Excel workbook
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet(`Transactions - ${year}-${month}`);
+      
+        // Add Header
+        sheet.addRow(['Monthly Transactions']).font = { size: 14, bold: true };
+        sheet.addRow([]);
+      
+        // Add Daily Transactions Header
+        sheet.addRow(['Daily Transactions']).font = { size: 12, bold: true };
+        sheet.addRow(['Date', 'Transaction Amounts', 'Total Amount']);
+      
+        // Add daily transactions to the sheet
+        dailyTransactions.forEach((data, date) => {
+          if (data.transactions.length === 0) {
+            // No transactions for the day
+            sheet.addRow([date, 'No transactions', 0]);
+          } else {
+            // Add transactions for the day
+            const transactionDetails = data.transactions.map((t) => t.amount).join(', ');
+            sheet.addRow([date, transactionDetails, data.total]);
+          }
+        });
+      
+        // Format Columns
+        sheet.columns = [
+          { width: 15 }, // Date
+          { width: 30 }, // Transaction Amounts
+          { width: 15 }, // Total Amount
+        ];
+      
+        // Generate and return Excel file as a buffer
+        const buffer = await workbook.xlsx.writeBuffer();
+        return Buffer.from(buffer);
+      }
+         
 }
