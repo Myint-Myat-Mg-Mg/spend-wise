@@ -95,12 +95,7 @@ export class TransactionController {
     ) {
         const userId = req.user.id;
 
-        const transactionData = {
-            ...createTransactionDto,
-            attachmentImage: attachmentImage ? `/uploads/transaction-images/${attachmentImage.filename}` : undefined,
-        };
-
-        return this.transactionService.createTransaction(userId, createTransactionDto);
+        return this.transactionService.createTransaction(userId, createTransactionDto, attachmentImage);
     }
 
     @Get('transfer/:transferGroupId')
@@ -176,7 +171,4 @@ export class TransactionController {
         const userId = req.user.Id;
         return this.transactionService.getTransactionById(userId, transactionId);
     }
-
 }
-
-    

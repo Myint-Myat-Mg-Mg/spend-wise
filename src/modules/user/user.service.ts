@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User, Prisma } from '@prisma/client';
-import { CreateUserDto } from './dto/user.dto';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -40,18 +40,27 @@ export class UserService {
     });
   }
 
-  async updateUserProfile(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    // Check if password is being updated
-    if (data.password && typeof data.password === 'string') {
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(data.password, 10);
-        data.password = hashedPassword;
-    }
+  async updateUserProfile(id: string, data: UpdateUserDto, image?: Express.Multer.File): Promise<User> {
 
-    return this.prisma.user.update({
-        where: { id },
-        data,
-    });
+    const updatedData: Prisma.UserUpdateInput = { ...data };
+
+  // Process the image if provided
+  if (image) {
+    const imagePath = `uploads/profile-images/${image.filename}`;
+    updatedData.image = imagePath;
+  }
+
+  // Check if password is being updated
+  if (updatedData.password && typeof updatedData.password === 'string') {
+    const hashedPassword = await bcrypt.hash(updatedData.password, 10);
+    updatedData.password = hashedPassword;
+  }
+
+  // Update the user in the database
+  return this.prisma.user.update({
+    where: { id },
+    data: updatedData,
+  });
   }
 
 

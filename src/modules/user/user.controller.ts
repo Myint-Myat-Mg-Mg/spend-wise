@@ -44,11 +44,7 @@ export class UserController {
     @Body() updateUserDto: UpdateUserDto,
     @UploadedFile() image?: Express.Multer.File,
   ) {
-    const data: any = { ...updateUserDto };
-    if (image) {
-      data.image = '/src/uploads/profile-images/${image.filename}';
-    }
-    return this.userService.updateUserProfile(id, data);
+    return this.userService.updateUserProfile(id, updateUserDto, image);
   }
 
   // @Post()

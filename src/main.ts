@@ -5,6 +5,7 @@ import { join } from 'path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -20,9 +21,7 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
 
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/src/uploads/',
-  })
+  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
   await app.listen(5000);
 }

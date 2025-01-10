@@ -88,7 +88,7 @@ export class TransactionService {
         return transaction;
     }
 
-    async createTransaction(userId: string, data: CreateTransactionDto, attachmentImageFile?: Express.Multer.File){
+    async createTransaction(userId: string, data: CreateTransactionDto, attachmentImageFile?: Express.Multer.File): Promise<Transaction> {
         const { accountId, type, amount, categoryId, remark, description } = data;
 
         const parsedAmount = Number(amount);
@@ -110,7 +110,7 @@ export class TransactionService {
             throw new NotFoundException(`Category with ID ${categoryId} not found.`);
         }
 
-        if (type === TransactionType.EXPENSE && account.balance < amount) {
+        if (type === TransactionType.EXPENSE && account.balance < parsedAmount) {
             throw new BadRequestException('Insufficient balance for this transaction.');
         }
 
